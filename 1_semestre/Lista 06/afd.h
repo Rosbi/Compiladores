@@ -4,8 +4,8 @@
 #include<stdio.h>
 #include<stdint.h>
 
-#define symbol_quantity 2
-#define state_quantity 11
+#define symbol_quantity 20
+#define state_quantity 23
 
 extern const int estado_inicial;
 
