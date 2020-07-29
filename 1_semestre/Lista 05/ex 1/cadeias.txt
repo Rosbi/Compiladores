@@ -1,2 +1,2 @@
-+-abcabc@ ab    c
++-abcabc@ abc
 fgh
