@@ -131,19 +131,31 @@ void continuarLeitura(char input_atual, int *estado_atual, int *proximo_estado, 
 
 void reiniciarLeitura(char input_atual, int* ultimo_final, int* proximo_estado, int* estado_atual, int* c_inicio_leitura, int* c_posicao_atual,
 						int* c_ult_fin_recon, FILE* input_file){
-	const char* e_final = eEstadoFinal(*estado_atual);
-	if(*ultimo_final==0 && e_final==NULL){
-		if(input_atual != '\n')
-			printf("%c ERRO\n", input_atual);
+
+	if(input_atual == ' '){
+		printf(".32\n");
 		(*c_inicio_leitura)++;
-	}else if(*ultimo_final!=0 && e_final==NULL){
-		imprimirCadeia(*c_inicio_leitura, *c_ult_fin_recon, input_file);
-		printf(" %s\n", eEstadoFinal(*ultimo_final));
-		*c_inicio_leitura = *c_ult_fin_recon;
+	}else if(input_atual == '\n'){
+		printf(".10\n");
+		(*c_inicio_leitura)++;
+	}else if(input_atual == '\t'){
+		printf(".9\n");
+		(*c_inicio_leitura)++;
 	}else{
-		imprimirCadeia(*c_inicio_leitura, *c_posicao_atual, input_file);
-		printf(" %s\n", e_final);
-		*c_inicio_leitura = *c_ult_fin_recon;
+		printf("-character: ");
+		const char* e_final = eEstadoFinal(*estado_atual);
+		if(*ultimo_final==0 && e_final==NULL){
+			printf("%c ERRO\n", input_atual);
+			(*c_inicio_leitura)++;
+		}else if(*ultimo_final!=0 && e_final==NULL){
+			imprimirCadeia(*c_inicio_leitura, *c_ult_fin_recon, input_file);
+			printf(" %s\n", eEstadoFinal(*ultimo_final));
+			*c_inicio_leitura = *c_ult_fin_recon;
+		}else{
+			imprimirCadeia(*c_inicio_leitura, *c_posicao_atual, input_file);
+			printf(" %s\n", e_final);
+			*c_inicio_leitura = *c_ult_fin_recon;
+		}
 	}
 
 	*c_posicao_atual = *c_inicio_leitura;
