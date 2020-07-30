@@ -1,6 +1,8 @@
 #include<stdbool.h>
 #include<stdio.h>
 #include<stdint.h>
+#include<ctype.h>
+#include<string.h>
 #include"afd.h"
 
 const int estado_inicial=1;
@@ -72,7 +74,7 @@ const int8_t estados[state_quantity][symbol_quantity+1] =
 	/* Estado 19 */	 { 0, 0, 0,19,19,19,19,19,19,19,19,19,19, 0, 0,20, 0, 0, 0, 0, 0}, 
 	/* Estado 20 */	 { 0,21,21,22,22,22,22,22,22,22,22,22,22, 0, 0, 0, 0, 0, 0, 0, 0}, 
 	/* Estado 21 */	 { 0, 0, 0,22,22,22,22,22,22,22,22,22,22, 0, 0, 0, 0, 0, 0, 0, 0}, 
-	/* Estado 22 */	 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	/* Estado 22 */	 { 0, 0, 0,22,22,22,22,22,22,22,22,22,22, 0, 0, 0, 0, 0, 0, 0, 0},
 };
 
 int selecionarPosicao(unsigned char caracter){
@@ -113,16 +115,16 @@ const char* eEstadoFinal(int estado){
 void imprimirCadeia(int posicao_inicial, int posicao_final, FILE* input){
 	char c;
 	fseek(input, posicao_inicial, SEEK_SET);
+	printf(" ");
 	for(int i=posicao_inicial;i<posicao_final;i++){
 		c = fgetc(input);
-		if(c != '\n')
+		if(c != '\n' && c != EOF)
 			printf("%c", c);
 	}
 }
 
 void continuarLeitura(char input_atual, int *estado_atual, int *proximo_estado, int *c_posicao_atual, int *ultimo_final, int* c_ult_fin_recon){
 	*estado_atual = *proximo_estado;
-	(*c_posicao_atual)++;
 	if(eEstadoFinal(*estado_atual)){
 		*ultimo_final = *estado_atual;
 		*c_ult_fin_recon = *c_posicao_atual;
@@ -131,31 +133,37 @@ void continuarLeitura(char input_atual, int *estado_atual, int *proximo_estado, 
 
 void reiniciarLeitura(char input_atual, int* ultimo_final, int* proximo_estado, int* estado_atual, int* c_inicio_leitura, int* c_posicao_atual,
 						int* c_ult_fin_recon, FILE* input_file){
-
-	if(input_atual == ' '){
-		printf(".32\n");
-		(*c_inicio_leitura)++;
-	}else if(input_atual == '\n'){
-		printf(".10\n");
-		(*c_inicio_leitura)++;
-	}else if(input_atual == '\t'){
-		printf(".9\n");
-		(*c_inicio_leitura)++;
-	}else{
-		printf("-character: ");
-		const char* e_final = eEstadoFinal(*estado_atual);
-		if(*ultimo_final==0 && e_final==NULL){
-			printf("%c ERRO\n", input_atual);
-			(*c_inicio_leitura)++;
-		}else if(*ultimo_final!=0 && e_final==NULL){
-			imprimirCadeia(*c_inicio_leitura, *c_ult_fin_recon, input_file);
-			printf(" %s\n", eEstadoFinal(*ultimo_final));
-			*c_inicio_leitura = *c_ult_fin_recon;
-		}else{
-			imprimirCadeia(*c_inicio_leitura, *c_posicao_atual, input_file);
-			printf(" %s\n", e_final);
-			*c_inicio_leitura = *c_ult_fin_recon;
+	const char* e_final = eEstadoFinal(*estado_atual);
+	char est_imprimir[8];
+	
+	//Cadeia reconhecida, mas cursor em estado não final
+	if(*ultimo_final!=0 && e_final==NULL){
+		strcpy(est_imprimir, eEstadoFinal(*ultimo_final));
+		*c_posicao_atual = *c_ult_fin_recon;
+	}
+	//Cadeia reconhecida, cursor em estado final
+	else if(*ultimo_final!=0 && e_final!=NULL){
+		strcpy(est_imprimir, e_final);
+	}
+	//Nenhuma cadeia reconhecida, E NÃO É whitespace
+	else{
+		//Caso espaço em branco
+		if(!isspace(input_atual) || (isspace(input_atual) && (*c_posicao_atual - *c_inicio_leitura) > 1)){
+			printf("ERRO\n");
 		}
+		(*c_inicio_leitura)++;
+	}
+
+	//Caso seja válido, imprime o estado
+	if(*ultimo_final != 0){
+		printf("%s", est_imprimir);
+		//Imprime a cadeia, caso seja um número
+		if(strcmp(est_imprimir, "REAL")==0 || strcmp(est_imprimir, "INTEIRO")==0){
+			imprimirCadeia(*c_inicio_leitura, *c_posicao_atual, input_file);
+		}
+		if(!feof(input_file))
+			printf("\n");
+		*c_inicio_leitura = *c_ult_fin_recon;
 	}
 
 	*c_posicao_atual = *c_inicio_leitura;

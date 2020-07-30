@@ -4,7 +4,7 @@
 #include"afd.h"
 
 int main(){
-	FILE* input_file = fopen("cadeias.txt", "r");
+	FILE* input_file = stdin;
 
 	int estado_atual     = estado_inicial;
 	int ultimo_final     = 0;
@@ -16,9 +16,10 @@ int main(){
 	fseek(input_file, 0, SEEK_END);
 	int tamanho_cadeia = ftell(input_file);
 	fseek(input_file, 0, SEEK_SET);
-	
+
 	do{
 		input_atual = fgetc(input_file);
+		c_posicao_atual++;
 
 		int proximo_estado = estados[estado_atual][selecionarPosicao(input_atual)];
 		if(proximo_estado<=0){
