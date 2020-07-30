@@ -118,13 +118,14 @@ void imprimirCadeia(int posicao_inicial, int posicao_final, FILE* input){
 	printf(" ");
 	for(int i=posicao_inicial;i<posicao_final;i++){
 		c = fgetc(input);
-		if(c != '\n' && c != EOF)
+		if(c != '\n' && c != EOF && c != ' ')
 			printf("%c", c);
 	}
 }
 
 void continuarLeitura(char input_atual, int *estado_atual, int *proximo_estado, int *c_posicao_atual, int *ultimo_final, int* c_ult_fin_recon){
 	*estado_atual = *proximo_estado;
+	(*c_posicao_atual)++;
 	if(eEstadoFinal(*estado_atual)){
 		*ultimo_final = *estado_atual;
 		*c_ult_fin_recon = *c_posicao_atual;
@@ -148,8 +149,8 @@ void reiniciarLeitura(char input_atual, int* ultimo_final, int* proximo_estado, 
 	//Nenhuma cadeia reconhecida, E NÃO É whitespace
 	else{
 		//Caso espaço em branco
-		if(!isspace(input_atual) || (isspace(input_atual) && (*c_posicao_atual - *c_inicio_leitura) > 1)){
-			printf("ERRO\n");
+		if(!isspace(input_atual) || (isspace(input_atual) && (*c_posicao_atual - *c_inicio_leitura) > 0)){
+			printf("ERRO");
 		}
 		(*c_inicio_leitura)++;
 	}
@@ -161,8 +162,6 @@ void reiniciarLeitura(char input_atual, int* ultimo_final, int* proximo_estado, 
 		if(strcmp(est_imprimir, "REAL")==0 || strcmp(est_imprimir, "INTEIRO")==0){
 			imprimirCadeia(*c_inicio_leitura, *c_posicao_atual, input_file);
 		}
-		if(!feof(input_file))
-			printf("\n");
 		*c_inicio_leitura = *c_ult_fin_recon;
 	}
 
