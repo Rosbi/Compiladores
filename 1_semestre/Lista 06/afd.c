@@ -76,11 +76,11 @@ const int8_t estados[state_quantity][symbol_quantity+1] =
 };
 
 int selecionarPosicao(unsigned char caracter){
-    return simbolos[caracter];
+	return simbolos[caracter];
 }
 
 const char* eEstadoFinal(int estado){
-    switch(estado){
+	switch(estado){
 		case  3:
 			return "ELE";
 		case  6:
@@ -107,7 +107,7 @@ const char* eEstadoFinal(int estado){
 			return "REAL";
 		default:
 		return NULL;
-    }
+	}
 }
 
 void imprimirCadeia(int posicao_inicial, int posicao_final, FILE* input){
@@ -121,34 +121,34 @@ void imprimirCadeia(int posicao_inicial, int posicao_final, FILE* input){
 }
 
 void continuarLeitura(char input_atual, int *estado_atual, int *proximo_estado, int *c_posicao_atual, int *ultimo_final, int* c_ult_fin_recon){
-    *estado_atual = *proximo_estado;
-    (*c_posicao_atual)++;
-    if(eEstadoFinal(*estado_atual)){
-        *ultimo_final = *estado_atual;
-        *c_ult_fin_recon = *c_posicao_atual;
-    }
+	*estado_atual = *proximo_estado;
+	(*c_posicao_atual)++;
+	if(eEstadoFinal(*estado_atual)){
+		*ultimo_final = *estado_atual;
+		*c_ult_fin_recon = *c_posicao_atual;
+	}
 }
 
 void reiniciarLeitura(char input_atual, int* ultimo_final, int* proximo_estado, int* estado_atual, int* c_inicio_leitura, int* c_posicao_atual,
 						int* c_ult_fin_recon, FILE* input_file){
-    const char* e_final = eEstadoFinal(*estado_atual);
-    if(*ultimo_final==0 && e_final==NULL){
-        if(input_atual != '\n')
+	const char* e_final = eEstadoFinal(*estado_atual);
+	if(*ultimo_final==0 && e_final==NULL){
+		if(input_atual != '\n')
 			printf("%c ERRO\n", input_atual);
-        (*c_inicio_leitura)++;
-    }else if(*ultimo_final!=0 && e_final==NULL){
+		(*c_inicio_leitura)++;
+	}else if(*ultimo_final!=0 && e_final==NULL){
 		imprimirCadeia(*c_inicio_leitura, *c_ult_fin_recon, input_file);
 		printf(" %s\n", eEstadoFinal(*ultimo_final));
 		*c_inicio_leitura = *c_ult_fin_recon;
 	}else{
 		imprimirCadeia(*c_inicio_leitura, *c_posicao_atual, input_file);
-        printf(" %s\n", e_final);
-        *c_inicio_leitura = *c_ult_fin_recon;
-    }
+		printf(" %s\n", e_final);
+		*c_inicio_leitura = *c_ult_fin_recon;
+	}
 
-    *c_posicao_atual = *c_inicio_leitura;
-    *c_ult_fin_recon = *c_inicio_leitura;
-    *estado_atual = estado_inicial;
+	*c_posicao_atual = *c_inicio_leitura;
+	*c_ult_fin_recon = *c_inicio_leitura;
+	*estado_atual = estado_inicial;
 	*ultimo_final = 0;
-    fseek(input_file, *c_inicio_leitura, SEEK_SET);
+	fseek(input_file, *c_inicio_leitura, SEEK_SET);
 }
