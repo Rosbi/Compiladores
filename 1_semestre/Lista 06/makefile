@@ -10,3 +10,5 @@ afd.o: afd.c afd.h
 
 clean:
 	rm -rf main *.o
+cleantxt:
+	rm -rf *.txt

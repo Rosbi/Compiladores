@@ -4,7 +4,7 @@
 #include"afd.h"
 
 int main(){
-	FILE* input_file = fopen("t.txt", "r");
+	FILE* input_file = stdin;
 
 	int estado_atual     = estado_inicial;
 	int ultimo_final     = 0;
@@ -23,8 +23,6 @@ int main(){
 		int proximo_estado = estados[estado_atual][selecionarPosicao(input_atual)];
 		if(proximo_estado<=0){
 			reiniciarLeitura(input_atual, &ultimo_final, &proximo_estado, &estado_atual, &c_inicio_leitura, &c_posicao_atual, &c_ult_fin_recon, input_file);
-			if(input_atual != EOF)
-				printf("\n");
 		}else{
 			continuarLeitura(input_atual, &estado_atual, &proximo_estado, &c_posicao_atual, &ultimo_final, &c_ult_fin_recon);
 		}

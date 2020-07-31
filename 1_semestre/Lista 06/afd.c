@@ -149,7 +149,10 @@ void reiniciarLeitura(char input_atual, int* ultimo_final, int* proximo_estado, 
 	//Nenhuma cadeia reconhecida, E NÃO É whitespace
 	else{
 		//Caso espaço em branco
-		if(!isspace(input_atual) || (isspace(input_atual) && (*c_posicao_atual - *c_inicio_leitura) > 0)){
+		
+		if(input_atual != EOF && (!isspace(input_atual) || (isspace(input_atual) && (*c_posicao_atual - *c_inicio_leitura) > 0))){
+			if(*c_inicio_leitura > 0)
+				printf("\n");
 			printf("ERRO");
 		}
 		(*c_inicio_leitura)++;
@@ -157,6 +160,8 @@ void reiniciarLeitura(char input_atual, int* ultimo_final, int* proximo_estado, 
 
 	//Caso seja válido, imprime o estado
 	if(*ultimo_final != 0){
+		if(*c_inicio_leitura > 0)
+			printf("\n");
 		printf("%s", est_imprimir);
 		//Imprime a cadeia, caso seja um número
 		if(strcmp(est_imprimir, "REAL")==0 || strcmp(est_imprimir, "INTEIRO")==0){
