@@ -4,7 +4,7 @@ CC=gcc
 CFLAGS=
 LIBS=
 
-PROGRAMA = cstats
+PROGRAMA = lexico
 LEXICO = lexico.l
 
 $(PROGRAMA): $(LEXICO)
