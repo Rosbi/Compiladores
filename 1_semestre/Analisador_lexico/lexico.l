@@ -102,7 +102,7 @@ int charFrequency(const char *str, char ch){
 "0"[0-9]+							{myprintf("NUM_OCTAL(%s)", yytext);		line_chars+=strlen(yytext);}
 [0-9]+								{myprintf("NUM_INTEGER(%s)", yytext);	line_chars+=strlen(yytext);}
 "\'""\\"?."\'"						{myprintf("CHARACTER(");strlen(yytext)==3 ? printf("%c)",yytext[1]) : printf("%c%c)",yytext[1],yytext[2]);line_chars+=strlen(yytext);}
-"\"".*"\""							{line_chars+=strlen(yytext);yytext[strlen(yytext)-1]='\0';aux=&yytext[1];myprintf("STRING(%s)", aux);}
+\"(\\.|[^"\\])*\"					{line_chars+=strlen(yytext);yytext[strlen(yytext)-1]='\0';aux=&yytext[1];myprintf("STRING(%s)", aux);}
 	/*[_a-zA-z][_a-zA-Z0-9]*	{printf("IDENTIFIER(%s)\n", yytext);	line_chars+=strlen(yytext);}*/
 ([a-z]|"_"|[A-Z])([a-z]|"_"|[A-Z]|[0-9])*	{myprintf("IDENTIFIER(%s)", yytext);	line_chars+=strlen(yytext);}
 
