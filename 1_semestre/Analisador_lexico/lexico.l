@@ -114,7 +114,7 @@ int charFrequency(const char *str, char ch){
 	/* misc */
 [ \r\t\f]	{line_chars++;}
 [\n]		{total_lines++;line_chars=0;}
-.			{line_chars++;myprintf("error:lexical:%d:%d: %s\n", total_lines, line_chars, yytext);}
+.			{line_chars++;myprintf("error:lexical:%d:%d: %s", total_lines, line_chars, yytext);}
 
 %%
 
