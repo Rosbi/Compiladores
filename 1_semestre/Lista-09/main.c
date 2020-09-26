@@ -32,11 +32,6 @@ void printError(char* esperado){
 		myprintf("ERRO SINTATICO: CADEIA INCOMPLETA");
 	}else{
 		myprintf("ERRO SINTATICO EM: %s ESPERADO: %s", tokenStringify(g_token), esperado);
-		// switch(){
-		// 	case 'S': printf("if, begin, print"); break;
-		// 	case 'L': printf("end, ;"); break;
-		// 	case 'E': printf("num"); break;
-		// }
 	}
 }
 
@@ -106,7 +101,6 @@ bool E(){
 }
 
 int main(){
-	// file_in = fopen("t.txt", "r");
 	file_in = stdin;
 	
 	while(!feof(file_in)){
