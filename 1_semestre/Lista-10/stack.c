@@ -10,7 +10,7 @@
 
 //Estrutura de lista duplamente encadeada para guardar os elementos da pilha
 struct stackNode{
-	void* element;
+	StackElement element;
 	struct stackNode* next;
 	struct stackNode* prev;
 };
@@ -64,10 +64,10 @@ int stackPush(Stack stck, StackElement elem){
 StackElement stackPop(Stack stck){
 	struct stack *s = (struct stack*)stck;
 	if(s->first==NULL){
-		return NULL;
+		return -1;
 	}
 
-	StackElement *se;
+	StackElement se;
 	struct stackNode *aux = s->top;
 
 	se = aux->element;
@@ -82,6 +82,11 @@ StackElement stackPop(Stack stck){
 	
 	s->size = s->size-1;
 	return se;
+}
+
+bool stackIsEmpty(Stack stck){
+	struct stack *s = (struct stack*)stck;
+	return s->size == 0 ? true : false;
 }
 
 int stackSize(Stack stck){
@@ -112,4 +117,21 @@ void stackFree(Stack *stck){
 	stackDump(*stck);
 	free(*s);
 	*s = NULL;
+}
+
+
+
+
+//
+char* tokenStringify(int);
+
+void printStack(Stack stck){
+	struct stack *s = (struct stack*)stck;
+	struct stackNode *aux = s->first;
+	printf("stack: ");
+	while(aux != NULL){
+		printf("%s ", tokenStringify(aux->element));
+		aux = aux->next;
+	}
+	printf("\n");
 }

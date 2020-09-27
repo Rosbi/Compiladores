@@ -3,7 +3,7 @@
 #include<stdarg.h>
 #include"lex_analyser.h"
 
-token_type g_token;
+token_type s_token;
 FILE* file_in;
 bool S();
 bool L();
@@ -28,22 +28,22 @@ void my_next_print(const char *format, ...){
 }
 
 void printError(char* esperado){
-	if(g_token == NEWLINE){
+	if(s_token == NEWLINE){
 		myprintf("ERRO SINTATICO: CADEIA INCOMPLETA");
 	}else{
-		myprintf("ERRO SINTATICO EM: %s ESPERADO: %s", tokenStringify(g_token), esperado);
+		myprintf("ERRO SINTATICO EM: %s ESPERADO: %s", tokenStringify(s_token), esperado);
 	}
 }
 
 bool error(token_type t){}
 bool advance(){
 	do{
-		g_token = getToken(file_in);
-	}while(g_token == WHITESPACE);
+		s_token = getToken(file_in);
+	}while(s_token == WHITESPACE);
 	return true;
 }
 bool eat(token_type t){
-	if(g_token==t){
+	if(s_token==t){
 		advance();
 		return true;
 	}else{
@@ -53,7 +53,7 @@ bool eat(token_type t){
 }
 
 bool S(){
-	switch(g_token){
+	switch(s_token){
 		case IF: 
 			if(!eat(IF)){ printError("XXX"); return false; }
 			if(!E()){ return false; }
@@ -78,7 +78,7 @@ bool S(){
 	return true;
 }
 bool L(){
-	switch(g_token){
+	switch(s_token){
 		case END:
 			if(!eat(END)){ printError("LLL"); return false; }
 			break;
@@ -104,13 +104,13 @@ int main(){
 	file_in = stdin;
 	
 	while(!feof(file_in)){
-		g_token = getToken(file_in);
+		s_token = getToken(file_in);
 		if(S()){
 			myprintf("CADEIA ACEITA");
 		}else{
-			while(g_token != NEWLINE){
-				g_token = getToken(file_in);
-				if(g_token == TOKEN_ERROR)
+			while(s_token != NEWLINE){
+				s_token = getToken(file_in);
+				if(s_token == TOKEN_ERROR)
 					break;
 			}
 		}

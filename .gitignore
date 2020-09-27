@@ -3,3 +3,4 @@ teste/
 .vscode
 *exe
 *.o
+*.txt

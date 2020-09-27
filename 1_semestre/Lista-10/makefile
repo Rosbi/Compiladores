@@ -1,17 +1,27 @@
-main: main.o lex_analyser.o
-	gcc main.o lex_analyser.o parser.o stack.o -o main
+CC=gcc
+CFLAGS= -c -std=c99
+
+main: main.o lex_analyser.o parser.o stack.o globals.o custom_print.o
+	$(CC) main.o lex_analyser.o parser.o stack.o globals.o custom_print.o -o main
 
 main.o: main.c
-	gcc main.c -o main.o -c
+	$(CC) main.c -o main.o $(CFLAGS)
 
 lex_analyser.o: lex_analyser.c
-	gcc lex_analyser.c -o lex_analyser.o -c
+	$(CC) lex_analyser.c -o lex_analyser.o $(CFLAGS)
 
 parser.o: parser.c
-	gcc parser.c -o parser.o -c
+	$(CC) parser.c -o parser.o $(CFLAGS)
 
-stack.o: stack.o
-	gcc stack.c -o stack.o -c
+stack.o: stack.c
+	$(CC) stack.c -o stack.o $(CFLAGS)
+
+globals.o: globals.c
+	$(CC) globals.c -o globals.o $(CFLAGS)
+
+custom_print.o: custom_print.c
+	$(CC) custom_print.c -o custom_print.o $(CFLAGS)
+
 
 clean:
 	rm -rf *.o main

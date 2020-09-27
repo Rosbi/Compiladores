@@ -1,44 +1,132 @@
 #include"parser.h"
+#include"stack.h"
+#include"globals.h"
 
-static token_type g_token = TOKEN_ERROR;
+token_type s_token = TOKEN_ERROR;
 
-const int productions_quantity = 6;
-const int terminals_quantity   = 6;
-const int8_t LL1_table[productions_quantity][terminals_quantity] = {
+char* ll1_expected = "oi mae";
 
+bool transition(token_type input_token){
+    switch(s_token){
+        case S_nt:
+            return S(input_token);
+        case E_nt:
+            return E(input_token);
+        case E1_nt:
+            return E1(input_token);
+        case T_nt:
+            return T(input_token);
+        case T1_nt:
+            return T1(input_token);
+        case F_nt:
+            return F(input_token);
+        default:
+            return false;
+    }
 }
 
-bool S(){
-
+bool S(token_type input_token){
+    switch(input_token){
+        case ID:
+        case LPAREN:
+            stackPush(stck, DOLLAR);
+            stackPush(stck, E_nt);
+            break;
+        default:
+            ll1_expected = "id, (";
+            return false;
+    }
+    return true;
 }
-bool E(){
-    
+bool E(token_type input_token){
+    switch(input_token){
+        case ID:
+        case LPAREN:
+            stackPush(stck, E1_nt);
+            stackPush(stck, T_nt);
+        break;
+        default:
+            ll1_expected = "id, (";
+            return false;
+    }
+    return true;
 }
-bool E1(){
-    
+bool E1(token_type input_token){
+    switch(input_token){
+        case PLUS_SIGN:
+            stackPush(stck, E1_nt);
+            stackPush(stck, T_nt);
+            stackPush(stck, PLUS_SIGN);
+            break;
+        case RPAREN:
+        case DOLLAR:
+            break;
+        default:
+            ll1_expected = "+, ), $";
+            return false;
+    }
+    return true;
 }
-bool T(){
-    
+bool T(token_type input_token){
+    switch (input_token)
+    {
+    case ID:
+    case LPAREN:
+        stackPush(stck, T1_nt);
+        stackPush(stck, F_nt);
+        break;
+    default:
+            ll1_expected = "id, (";
+        return false;
+    }
+    return true;
 }
-bool T1(){
-    
+bool T1(token_type input_token){
+    switch(input_token){
+        case MULT_SIGN:
+            stackPush(stck, T1_nt);
+            stackPush(stck, F_nt);
+            stackPush(stck, MULT_SIGN);
+            break;
+        case PLUS_SIGN:
+        case RPAREN:
+        case DOLLAR:
+            break;
+        default:
+            ll1_expected = "+, *, ), $";
+            return false;
+    }
+    return true;
 }
-bool F(){
-    
+bool F(token_type input_token){
+    switch(input_token){
+        case ID:
+            stackPush(stck, ID);
+            break;
+        case LPAREN:
+            stackPush(stck, RPAREN);
+            stackPush(stck, E_nt);
+            stackPush(stck, LPAREN);
+            break;
+        default:
+            ll1_expected = "id, )";
+            return false;
+    }
+    return true;
 }
 
 bool error(){}
 
-bool advance(FILE* file_in){
+token_type advance(){
+    token_type token;
     do{
-        g_token = getToken(file_in);
-    }while(g_token == WHITESPACE);
-    return true;
+        token = getToken(file_in);
+    }while(token == WHITESPACE);
+    return token;
 }
 
 bool eat(token_type t){
-    if(g_token == t){
-        advance();
+    if(s_token == t){
         return true;
     }
     error(t);

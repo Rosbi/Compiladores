@@ -3,19 +3,10 @@
 
 #include<stdio.h>
 #include<stdint.h>
+#include"globals.h"
 
 typedef int token_type;
-enum tokens{
-	TOKEN_ERROR,
-	PLUS_SIGN,
-	MULT_SIGN,
-	LPAREN,
-	RPAREN,
-	ID,
-	DOLLAR,
-	WHITESPACE,
-	NEWLINE
-};
+extern char lex_error;
 
 char* tokenStringify(token_type);
 

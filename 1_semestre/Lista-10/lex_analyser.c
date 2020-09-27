@@ -5,10 +5,12 @@
 #include<string.h>
 #include"lex_analyser.h"
 
-const int estado_inicial=1;
+const int estado_inicial=3;
 
-const int symbol_quantity = 3 + 6;
-const int state_quantity  = 3 + 41;
+#define symbol_quantity  44
+#define state_quantity   10
+
+char lex_error = '.';
 
 const uint8_t simbolos[128] = 
 {
@@ -70,14 +72,24 @@ const int8_t estados[state_quantity][symbol_quantity] =
 
 char* tokenStringify(token_type token){
 	switch(token){
-		case TOKEN_ERROR:	return "erro";
-		case WHITESPACE:	return "whitespace";
-		case PLUS_SIGN:		return "+";
-		case MULT_SIGN:		return "*";
-		case LPAREN:		return "(";
-		case RPAREN:		return ")";
-		case ID:			return "id";
-		case DOLLAR:		return "dollar";
+		case TOKEN_EOF: 	return "";
+		case TOKEN_ERROR:	return "ERROR ";
+		case WHITESPACE:	return "ws ";
+		case NEWLINE:		return "";
+
+		case PLUS_SIGN:		return "+ ";
+		case MULT_SIGN:		return "* ";
+		case LPAREN:		return "( ";
+		case RPAREN:		return ") ";
+		case ID:			return "id ";
+		case DOLLAR:		return "$";
+
+		case S_nt:			return "S";
+		case E_nt:			return "E";
+		case E1_nt:			return "E'";
+		case T_nt:			return "T";
+		case T1_nt:			return "T'";
+		case F_nt:			return "F";
 		default:			return "this should not be possible";
 	}
 }
@@ -132,12 +144,16 @@ token_type reiniciarLeitura(char input_atual, int* ultimo_final, int* proximo_es
 	}
 	//Cadeia reconhecida, mas cursor em estado não final
 	else if(*ultimo_final!=0 && token==TOKEN_ERROR){
-		token = getEstado(*c_ult_fin_recon);
+		// token = getEstado(*c_ult_fin_recon);
 		*c_inicio_leitura = *c_ult_fin_recon;
+		*c_posicao_atual = *c_ult_fin_recon;
+		lex_error = input_atual;
 	}
 	//cadeia não reconhecida
 	else{
 		(*c_inicio_leitura)++;
+		(*c_posicao_atual)++;
+		lex_error = input_atual;
 	}
 	
 	if(input_atual != EOF){
@@ -150,12 +166,15 @@ token_type reiniciarLeitura(char input_atual, int* ultimo_final, int* proximo_es
 token_type getToken(FILE* file_in){
 	int estado_atual     = estado_inicial;
 	int ultimo_final     = 0;
-	int c_inicio_leitura = 0;
 	static int c_posicao_atual  = 0;
+	int c_inicio_leitura = c_posicao_atual;
 	int c_ult_fin_recon  = 0;
 	char input_atual     = '\0';
 
 	while(true){
+		if(feof(file_in)){
+			return TOKEN_EOF;
+		}
 		input_atual = fgetc(file_in);
 
 		int proximo_estado = estados[estado_atual][selecionarPosicao(input_atual)];
@@ -164,9 +183,6 @@ token_type getToken(FILE* file_in){
 		}else{
 			continuarLeitura(input_atual, &estado_atual, &proximo_estado, &c_posicao_atual, &ultimo_final, &c_ult_fin_recon);
 		}
-		
-		if(feof(file_in)){
-			return TOKEN_ERROR;
-		}
+
 	}
 }
