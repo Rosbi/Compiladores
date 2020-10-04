@@ -11,6 +11,7 @@ const int estado_inicial=3;
 #define state_quantity   3+84
 
 char lex_error = '.';
+char last_read_token[63] = "aaaa";
 
 const uint8_t simbolos[128] = 
 {
@@ -191,13 +192,37 @@ char* tokenStringify(token_type token){
 		case COMMENT:		return "COMMENT ";
 		case NUMBER:		return "NUMBER ";
 
-		// case S_nt:			return "S";
-		// case E_nt:			return "E";
-		// case E1_nt:			return "E'";
-		// case T_nt:			return "T";
-		// case T1_nt:			return "T'";
-		// case F_nt:			return "F";
-		default:			return "this should not be possible!!! ";
+		case PROGRAMA_nt:		return "PROGRAMA_nt ";
+		case BLOCO_nt:			return "BLOCO_nt ";
+		case BLOCO1_nt:			return "BLOCO1_nt ";
+		case BLOCO_C1_nt:		return "BLOCO_C1_nt ";
+		case BLOCO_C11_nt:		return "BLOCO_C11_nt ";
+		case BLOCO_C2_nt:		return "BLOCO_C2_nt ";
+		case TIPO_nt:			return "TIPO_nt ";
+		case PARAMETROS_nt:		return "PARAMETROS_nt ";
+		case PARAMETROS1_nt:	return "PARAMETROS1_nt ";
+		case PARAMETROS11_nt:	return "PARAMETROS11_nt ";
+		case PARAMETROS_C1_nt:	return "PARAMETROS_C1_nt ";
+		case VARIAVEL1_nt:		return "VARIAVEL1_nt ";
+		case VARIAVEL_C1_nt:	return "VARIAVEL_C1_nt ";
+		case COMANDO_nt:		return "COMANDO_nt ";
+		case COMANDO0_nt:		return "COMANDO0_nt ";
+		case COMANDO1_nt:		return "COMANDO1_nt ";
+		case COMANDO2_nt:		return "COMANDO2_nt ";
+		case COMANDO_C1_nt:		return "COMANDO_C1_nt ";
+		case COMANDO_C2_nt:		return "COMANDO_C2_nt ";
+		case EXPRESSAO_nt:		return "EXPRESSAO_nt ";
+		case EXPRESSAO1_nt:		return "EXPRESSAO1_nt ";
+		case SINAL_nt:			return "SINAL_nt ";
+		case EXP_SIMPLES_nt:	return "EXP_SIMPLES_nt ";
+		case EXP_SIMPLES1_nt:	return "EXP_SIMPLES1_nt ";
+		case TERMO_nt:			return "TERMO_nt ";
+		case TERMO1_nt:			return "TERMO1_nt ";
+		case FATOR_nt:			return "FATOR_nt ";
+		case FATOR0_nt:			return "FATOR0_nt ";
+		case FATOR_E_nt:		return "FATOR_E_nt ";
+		case FATOR_E1_nt:		return "FATOR_E1_nt ";
+		default:				return "this should not be possible!!! ";
 	}
 }
 
@@ -318,6 +343,17 @@ void continuarLeitura(int *estado_atual, int *proximo_estado, int *c_posicao_atu
 token_type reiniciarLeitura(char input_atual, int* ultimo_final, int* estado_atual, int* c_inicio_leitura, int* c_posicao_atual,
 						int* c_ult_fin_recon, FILE* input_file){
 	token_type token = getEstado(*estado_atual);
+
+	int tamanhoString = *c_posicao_atual - *c_inicio_leitura;
+	setColuna(getColuna() + tamanhoString);
+	if(input_atual != EOF){
+		fseek(file_in, *c_inicio_leitura, SEEK_SET);
+		if(tamanhoString+1 <= 63){
+			fgets(last_read_token, tamanhoString+1, file_in);
+		}else{
+			fgets(last_read_token, 63, file_in);
+		}
+	}
 	
 	//Cadeia reconhecida, cursor em estado final
 	if(*ultimo_final != 0 && token != TOKEN_ERROR){

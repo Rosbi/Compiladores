@@ -141,8 +141,12 @@ bool BLOCO1(token_type input_token){
 }
 bool BLOCO_C1(token_type input_token){
     switch(input_token){
+        case PROCEDURE:
+        case FUNCTION:
+        case BEGIN:
+            break;
         case ID:
-            stackPush(stck, BLOCO1_nt);
+            stackPush(stck, BLOCO_C1_nt);
             stackPush(stck, SEMICOLON);
             stackPush(stck, TIPO_nt);
             stackPush(stck, COLON);
@@ -293,6 +297,27 @@ bool PARAMETROS_C1(token_type input_token){
 }
 bool VARIAVEL1(token_type input_token){
     switch(input_token){
+        case SEMICOLON:
+        case END:
+        case COMMA:
+        case RPAREN:
+        case RBRACKET:
+        case ATTRIBUTION:
+        case THEN:
+        case DO_t:
+        case DIFF:
+        case LESS:
+        case LEQ:
+        case GEQ:
+        case GREAT:
+        case EQUALS:
+        case PLUS:
+        case MINUS:
+        case MULTIPLY:
+        case DIVIDE:
+        case LOG_OR:
+        case LOG_AND:
+            break;
         case LBRACKET:
             stackPush(stck, VARIAVEL1_nt);
             stackPush(stck, RBRACKET);
@@ -367,11 +392,10 @@ bool COMANDO(token_type input_token){
             break;
         case BEGIN:
             stackPush(stck, COMANDO_C2_nt);
+            stackPush(stck, COMANDO_nt);
             stackPush(stck, BEGIN);
             break;
         case END:
-            stackPush(stck, COMANDO0_nt);
-            stackPush(stck, ID);
             break;
         case IF_t:
             stackPush(stck, COMANDO2_nt);
@@ -400,6 +424,11 @@ bool COMANDO0(token_type input_token){
             stackPush(stck, COMANDO1_nt);
             break;
         case LBRACKET:
+            stackPush(stck, EXPRESSAO_nt);
+            stackPush(stck, ATTRIBUTION);
+            stackPush(stck, VARIAVEL1_nt);
+            break;
+        case ATTRIBUTION:
             stackPush(stck, EXPRESSAO_nt);
             stackPush(stck, ATTRIBUTION);
             stackPush(stck, VARIAVEL1_nt);
@@ -466,7 +495,6 @@ bool COMANDO_C2(token_type input_token){
             break;
         case END:
             stackPush(stck, END);
-            break;
             break;
         default:
             ll1_expected = "";
@@ -686,6 +714,26 @@ bool FATOR(token_type input_token){
 }
 bool FATOR0(token_type input_token){
     switch(input_token){
+        case SEMICOLON:
+        case END:
+        case COMMA:
+        case RPAREN:
+        case RBRACKET:
+        case THEN:
+        case DO_t:
+        case DIFF:
+        case LESS:
+        case LEQ:
+        case GEQ:
+        case GREAT:
+        case EQUALS:
+        case PLUS:
+        case MINUS:
+        case MULTIPLY:
+        case DIVIDE:
+        case LOG_OR:
+        case LOG_AND:
+            break;
         case LPAREN:
             stackPush(stck, FATOR_E_nt);
             stackPush(stck, LPAREN);
@@ -739,12 +787,16 @@ bool FATOR_E1(token_type input_token){
     return true;
 }
 
-bool error(){}
+bool error(){ return false; }
 
 token_type advance(){
     token_type token;
     do{
         token = getToken(file_in);
+        if(token == NEWLINE){
+            setLinha(getLinha()+1);
+            setColuna(1);
+        }
     }while(token == WHITESPACE || token == NEWLINE);
     return token;
 }

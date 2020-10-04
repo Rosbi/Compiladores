@@ -7,6 +7,7 @@
 
 typedef int token_type;
 extern char lex_error;
+extern char last_read_token[63];
 
 char* tokenStringify(token_type);
 

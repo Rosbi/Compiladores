@@ -8,8 +8,10 @@
 extern FILE* file_in;
 extern Stack stck;
 
-extern int linha;
-extern int coluna;
+int getLinha();
+void setLinha(int);
+int getColuna();
+void setColuna(int);
 
 enum tokens{
     //Tokens de controle
