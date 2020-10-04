@@ -35,8 +35,6 @@ bool FATOR_E1(token_type input_token);
 
 token_type s_token = TOKEN_ERROR;
 
-char* ll1_expected = "oi mae";
-
 bool transition(token_type input_token){
     switch(s_token){
         case PROGRAMA_nt:        return PROGRAMA(input_token);
@@ -84,7 +82,7 @@ bool PROGRAMA(token_type input_token){
             stackPush(stck, PROGRAM);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -100,7 +98,7 @@ bool BLOCO(token_type input_token){
             stackPush(stck, VAR);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -134,7 +132,7 @@ bool BLOCO1(token_type input_token){
             stackPush(stck, BEGIN);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -154,7 +152,7 @@ bool BLOCO_C1(token_type input_token){
             stackPush(stck, ID);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -169,7 +167,7 @@ bool BLOCO_C11(token_type input_token){
             stackPush(stck, COMMA);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -184,7 +182,7 @@ bool BLOCO_C2(token_type input_token){
         case END:
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -219,7 +217,7 @@ bool TIPO(token_type input_token){
             stackPush(stck, SINAL_nt);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -235,7 +233,7 @@ bool PARAMETROS(token_type input_token){
             stackPush(stck, LPAREN);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -262,7 +260,7 @@ bool PARAMETROS1(token_type input_token){
             stackPush(stck, RPAREN);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -277,7 +275,7 @@ bool PARAMETROS11(token_type input_token){
             stackPush(stck, COMMA);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -290,7 +288,7 @@ bool PARAMETROS_C1(token_type input_token){
             stackPush(stck, VAR);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -326,7 +324,7 @@ bool VARIAVEL1(token_type input_token){
             stackPush(stck, LBRACKET);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -377,7 +375,7 @@ bool VARIAVEL_C1(token_type input_token){
         case DIVIDE:
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -413,7 +411,7 @@ bool COMANDO(token_type input_token){
             stackPush(stck, WHILE_t);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -434,7 +432,7 @@ bool COMANDO0(token_type input_token){
             stackPush(stck, VARIAVEL1_nt);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -447,7 +445,7 @@ bool COMANDO1(token_type input_token){
             stackPush(stck, LPAREN);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -465,7 +463,7 @@ bool COMANDO2(token_type input_token){
             stackPush(stck, ELSE_t);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -481,7 +479,7 @@ bool COMANDO_C1(token_type input_token){
             stackPush(stck, RPAREN);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -497,7 +495,7 @@ bool COMANDO_C2(token_type input_token){
             stackPush(stck, END);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -514,7 +512,7 @@ bool EXPRESSAO(token_type input_token){
             stackPush(stck, EXP_SIMPLES_nt);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -554,7 +552,7 @@ bool EXPRESSAO1(token_type input_token){
             stackPush(stck, EQUALS);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -573,7 +571,7 @@ bool SINAL(token_type input_token){
             stackPush(stck, MINUS);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -591,7 +589,7 @@ bool EXP_SIMPLES(token_type input_token){
             stackPush(stck, SINAL_nt);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -628,7 +626,7 @@ bool EXP_SIMPLES1(token_type input_token){
             stackPush(stck, LOG_OR);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -643,7 +641,7 @@ bool TERMO(token_type input_token){
             stackPush(stck, FATOR_nt);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -683,7 +681,7 @@ bool TERMO1(token_type input_token){
             stackPush(stck, DIVIDE);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -707,7 +705,7 @@ bool FATOR(token_type input_token){
             stackPush(stck, LOG_NOT);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -742,7 +740,7 @@ bool FATOR0(token_type input_token){
             stackPush(stck, VARIAVEL1_nt);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -765,7 +763,7 @@ bool FATOR_E(token_type input_token){
             stackPush(stck, RPAREN);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;
@@ -781,7 +779,7 @@ bool FATOR_E1(token_type input_token){
             stackPush(stck, RPAREN);
             break;
         default:
-            ll1_expected = "";
+            
             return false;
     }
     return true;

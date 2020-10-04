@@ -118,21 +118,3 @@ void stackFree(Stack *stck){
 	free(*s);
 	*s = NULL;
 }
-
-
-
-
-//
-char* tokenStringify(int);
-int getLinha();
-
-void printStack(Stack stck){
-	struct stack *s = (struct stack*)stck;
-	struct stackNode *aux = s->first;
-	printf("%d: ", getLinha());
-	while(aux != NULL){
-		printf("%s ", tokenStringify(aux->element));
-		aux = aux->next;
-	}
-	printf("\n");
-}
