@@ -3,7 +3,6 @@
 #include"lex_analyser.h"
 #include"parser.h"
 #include"custom_print.h"
-#include<unistd.h>
 
 int main(){
     file_in = stdin;
