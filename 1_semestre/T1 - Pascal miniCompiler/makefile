@@ -1,8 +1,8 @@
 CC=gcc
-CFLAGS= -c -std=c99
+CFLAGS= -c -std=c99 -Wall -Wextra -g
 
 pascal: main.o lex_analyser.o parser.o stack.o globals.o custom_print.o
-	$(CC) main.o lex_analyser.o parser.o stack.o globals.o custom_print.o -o main
+	$(CC) main.o lex_analyser.o parser.o stack.o globals.o custom_print.o -o pascal
 
 main.o: main.c
 	$(CC) main.c -o main.o $(CFLAGS)

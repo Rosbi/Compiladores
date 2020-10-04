@@ -87,7 +87,7 @@ enum tokens{
 	TERMO_nt,
 	TERMO1_nt,
 	FATOR_nt,
-	FATOR0,
+	FATOR0_nt,
 	FATOR_E_nt,
 	FATOR_E1_nt,
 	nonterminal_end

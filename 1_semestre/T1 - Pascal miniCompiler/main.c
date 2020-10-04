@@ -6,25 +6,17 @@
 #include<unistd.h>
 
 int main(){
-    file_in = stdin;
+    // file_in = stdin;
+    file_in = fopen("./pascal_samples/tc01.pas", "r");
 
     token_type token = TOKEN_ERROR;
-    while(token != TOKEN_EOF){
-        token = getToken(file_in);
-        myprintf("%s", tokenStringify(token));
-    }
-/*    stackCreate(&stck);
+    stackCreate(&stck);
     token_type input_token;
 
-    while(true){
+    // while(true){
         input_token = advance();
-        stackPush(stck, S_nt);
-        while(s_token != NEWLINE){
-
-            if(stackIsEmpty(stck)){
-                myprintf("CADEIA ACEITA");
-                break;
-            }
+        stackPush(stck, PROGRAMA_nt);
+        while(s_token != TOKEN_EOF){
 
             // printStack(stck);
             s_token = stackPop(stck);
@@ -54,13 +46,17 @@ int main(){
                 break;
             }
         }
-        while(input_token != NEWLINE && input_token != TOKEN_EOF){
-            input_token = getToken(file_in);
+
+        if(stackIsEmpty(stck)){
+            myprintf("CADEIA ACEITA");
         }
-        if(input_token == TOKEN_EOF){
-            break;
-        }
-    }*/
+        // while(input_token != NEWLINE && input_token != TOKEN_EOF){
+        //     input_token = getToken(file_in);
+        // }
+        // if(input_token == TOKEN_EOF){
+        //     break;
+        // }
+    // }
 
     return 0;
 }

@@ -149,47 +149,47 @@ const int8_t estados[state_quantity][symbol_quantity] =
 
 char* tokenStringify(token_type token){
 	switch(token){
-		case TOKEN_EOF: 	return "EOF";
+		case TOKEN_EOF: 	return "EOF ";
 		case TOKEN_ERROR:	return "ERROR ";
 		case WHITESPACE:	return "ws ";
-		case NEWLINE:		return "";
+		case NEWLINE:		return "lf ";
 
-		case LOG_AND:		return "LOG_AND";
-		case BEGIN:			return "BEGIN";
-		case DIVIDE:		return "DIVIDE";
-		case DO_t:			return "DO_t";
-		case ELSE_t:		return "ELSE_t";
-		case END:			return "END";
-		case FUNCTION:		return "FUNCTION";
-		case IF_t:			return "IF_t";
-		case LOG_NOT:		return "LOG_NOT";
-		case LOG_OR:		return "LOG_OR";
-		case PROCEDURE:		return "PROCEDURE";
-		case PROGRAM:		return "PROGRAM";
-		case THEN:			return "THEN";
-		case VAR:			return "VAR";
-		case WHILE_t:		return "WHILE_t";
-		case ID:			return "ID";
-		case SEMICOLON:		return "SEMICOLON";
-		case PERIOD:		return "PERIOD";
-		case COLON:			return "COLON";
-		case ATTRIBUTION:	return "ATTRIBUTION";
-		case COMMA:			return "COMMA";
-		case RPAREN:		return "RPAREN";
-		case LPAREN:		return "LPAREN";
-		case RBRACKET:		return "RBRACKET";
-		case LBRACKET:		return "LBRACKET";
-		case EQUALS:		return "EQUALS";
-		case LESS:			return "LESS";
-		case DIFF:			return "DIFF";
-		case LEQ:			return "LEQ";
-		case GREAT:			return "GREAT";
-		case GEQ:			return "GEQ";
-		case PLUS:			return "PLUS";
-		case MINUS:			return "MINUS";
-		case MULTIPLY:		return "MULTIPLY";
-		case COMMENT:		return "COMMENT";
-		case NUMBER:		return "NUMBER";
+		case LOG_AND:		return "LOG_AND ";
+		case BEGIN:			return "BEGIN ";
+		case DIVIDE:		return "DIVIDE ";
+		case DO_t:			return "DO_t ";
+		case ELSE_t:		return "ELSE_t ";
+		case END:			return "END ";
+		case FUNCTION:		return "FUNCTION ";
+		case IF_t:			return "IF_t ";
+		case LOG_NOT:		return "LOG_NOT ";
+		case LOG_OR:		return "LOG_OR ";
+		case PROCEDURE:		return "PROCEDURE ";
+		case PROGRAM:		return "PROGRAM ";
+		case THEN:			return "THEN ";
+		case VAR:			return "VAR ";
+		case WHILE_t:		return "WHILE_t ";
+		case ID:			return "ID ";
+		case SEMICOLON:		return "SEMICOLON ";
+		case PERIOD:		return "PERIOD ";
+		case COLON:			return "COLON ";
+		case ATTRIBUTION:	return "ATTRIBUTION ";
+		case COMMA:			return "COMMA ";
+		case RPAREN:		return "RPAREN ";
+		case LPAREN:		return "LPAREN ";
+		case RBRACKET:		return "RBRACKET ";
+		case LBRACKET:		return "LBRACKET ";
+		case EQUALS:		return "EQUALS ";
+		case LESS:			return "LESS ";
+		case DIFF:			return "DIFF ";
+		case LEQ:			return "LEQ ";
+		case GREAT:			return "GREAT ";
+		case GEQ:			return "GEQ ";
+		case PLUS:			return "PLUS ";
+		case MINUS:			return "MINUS ";
+		case MULTIPLY:		return "MULTIPLY ";
+		case COMMENT:		return "COMMENT ";
+		case NUMBER:		return "NUMBER ";
 
 		// case S_nt:			return "S";
 		// case E_nt:			return "E";
@@ -197,7 +197,7 @@ char* tokenStringify(token_type token){
 		// case T_nt:			return "T";
 		// case T1_nt:			return "T'";
 		// case F_nt:			return "F";
-		default:			return "this should not be possible";
+		default:			return "this should not be possible!!! ";
 	}
 }
 
