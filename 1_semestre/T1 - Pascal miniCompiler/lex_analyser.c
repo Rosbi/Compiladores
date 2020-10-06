@@ -145,7 +145,7 @@ const int8_t estados[state_quantity][symbol_quantity] =
 	/* 83 */ { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //COMMENT
 	/* 84 */ {84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,84,85},
 	/* 85 */ { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //COMMENT
-	/* 86 */ { 0, 0, 0,85,86,86,86,86,86,86,86,86,86, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //NUMBER
+	/* 86 */ { 0, 0, 0,86,86,86,86,86,86,86,86,86,86, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //NUMBER
 };
 
 char* tokenStringify(token_type token){
@@ -354,6 +354,7 @@ token_type reiniciarLeitura(char input_atual, int* ultimo_final, int* estado_atu
 			fgets(last_read_token, 63, file_in);
 		}
 	}
+	// printf("%d, \\%s/, %d\n", getColuna(), last_read_token, strlen(last_read_token));
 	
 	//Cadeia reconhecida, cursor em estado final
 	if(*ultimo_final != 0 && token != TOKEN_ERROR){
@@ -401,5 +402,12 @@ token_type getToken(FILE* file_in){
 			continuarLeitura(&estado_atual, &proximo_estado, &c_posicao_atual, &ultimo_final, &c_ult_fin_recon);
 		}
 
+		if(input_atual == '\n'){
+			if(estado_atual == 84 || estado_atual == 81){
+				c_inicio_leitura = c_posicao_atual;
+			}
+			setLinha(getLinha()+1);
+			setColuna(0);
+		}
 	}
 }

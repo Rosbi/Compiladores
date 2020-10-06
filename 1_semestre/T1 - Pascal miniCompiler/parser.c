@@ -791,11 +791,11 @@ token_type advance(){
     token_type token;
     do{
         token = getToken(file_in);
-        if(token == NEWLINE){
-            setLinha(getLinha()+1);
-            setColuna(1);
-        }
-    }while(token == WHITESPACE || token == NEWLINE);
+        // if(token == NEWLINE){
+        //     setLinha(getLinha()+1);
+        //     setColuna(1);
+        // }
+    }while(token == WHITESPACE || token == NEWLINE || token == COMMENT);
     return token;
 }
 

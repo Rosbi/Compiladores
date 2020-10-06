@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS= -c -std=c99 -Wall -Wextra -g
+CFLAGS= -c -std=c99 -Wall -Wextra
 
 pascal: main.o lex_analyser.o parser.o stack.o globals.o custom_print.o
 	$(CC) main.o lex_analyser.o parser.o stack.o globals.o custom_print.o -o pascal
@@ -24,4 +24,4 @@ custom_print.o: custom_print.c
 
 
 clean:
-	rm -rf *.o main
+	rm -rf *.o pascal
