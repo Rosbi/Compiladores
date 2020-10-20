@@ -6,6 +6,7 @@
 
 int main(){
     file_in = stdin;
+    // file_in = fopen("./testes/tc08.pas", "r");
 
     stackCreate(&stck);
     token_type input_token;
@@ -14,6 +15,7 @@ int main(){
     stackPush(stck, PROGRAMA_nt);
     while(input_token != TOKEN_EOF){
 
+        // printStack(stck);
         s_token = stackPop(stck);
         
         //Tokens terminais

@@ -34,4 +34,6 @@ void stackDump(Stack);
 //O parametro da funcao é o endereço da pilha
 void stackFree(Stack *);
 
+void printStack(Stack stck);
+
 #endif

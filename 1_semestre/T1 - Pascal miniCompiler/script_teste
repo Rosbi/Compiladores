@@ -1,7 +1,9 @@
 #!/bin/bash
-for VALUE in {1..5}
+for VALUE in {1..9}
 do
     echo "Teste ${VALUE}"
-    ./pascal < ./pascal_samples/tc0${VALUE}.pas > saida0${VALUE}.txt
-    diff ./pascal_samples/saida_0${VALUE}.txt saida0${VALUE}.txt
+    ./pascal < ./testes/tc0${VALUE}.pas > saida0${VALUE}.txt
+    diff ./testes/saida_0${VALUE}.txt saida0${VALUE}.txt
 done
+    echo "Teste 10"
+    ./pascal < ./testes/tc10.pas > saida10.txt

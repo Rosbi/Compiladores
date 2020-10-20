@@ -89,7 +89,9 @@ bool PROGRAMA(token_type input_token){
 }
 bool BLOCO(token_type input_token){
     switch(input_token){
-        case ID:
+        case PROCEDURE:
+        case FUNCTION:
+        case BEGIN:
             stackPush(stck, BLOCO1_nt);
             break;
         case VAR:
@@ -258,6 +260,10 @@ bool PARAMETROS1(token_type input_token){
             break;
         case RPAREN:
             stackPush(stck, RPAREN);
+            break;
+        case SEMICOLON:
+            stackPush(stck, PARAMETROS1_nt);
+            stackPush(stck, SEMICOLON);
             break;
         default:
             
