@@ -1,16 +1,17 @@
 FLEX=flex
 BISON=bison
 CC=gcc
+FLAGS=-g -Wall
 
-PROGRAMA = l14e1
+PROGRAMA = dcmat
 LEXICO = lexico.l
 SINTATICO = sintatico.y
 
 $(PROGRAMA): $(LEXICO) $(SINTATICO)
 	$(BISON) -d $(SINTATICO)
 	$(FLEX) $(LEXICO)
-	$(CC) -c *.c -I.
-	$(CC) *.o -o $(PROGRAMA)
+	$(CC) -c *.c -I. $(FLAGS)
+	$(CC) *.o -o $(PROGRAMA) $(FLAGS)
 
 clean:
 	rm -f *.yy.c
@@ -18,4 +19,4 @@ clean:
 	rm -f *.tab.h
 	rm -f *.o
 	rm -f *.exe
-	rm -f l14e1
+	rm -f dcmat

@@ -1,9 +1,15 @@
 #ifndef CALCULUS_H
 #define CALCULUS_H
 
+#include<stdbool.h>
+
+void showSettings();
+void resetSettings();
+void setHView(float, float);
+void setVView(float, float);
 void integralStepsSet(int);
-int integralStepsGet();
-void integralStepsDefault();
+// int integralStepsGet();
+void setAxis(bool);
 
 /*
 set_h_view(float, float)
