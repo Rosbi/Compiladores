@@ -22,6 +22,7 @@ void showSettings(){
     printf(" h_view_hi: %.6f\n", h_view_hi);
     printf(" v_view_lo: %.6f\n", v_view_lo);
     printf(" v_view_hi: %.6f\n", v_view_hi);
+    printf(" integral_steps: %d\n", integral_steps);
     printf(" \n");
     printf(" Draw axis: %s", draw_axis ? "ON\n" : "OFF\n");
     printf(" Connect dots: %s", connect_dots ? "ON\n" : "OFF\n");
@@ -37,23 +38,30 @@ void resetSettings(){
     integral_steps = integral_steps_default;
 }
 void setHView(float lo, float hi){
-    if(lo < hi){
-        h_view_lo = lo;
-        h_view_hi = hi;
+    if(lo >= hi){
+        printf("\nError: h_view_lo must be smaller than h_view_hi\n\n");
+        return;
     }
+
+    h_view_lo = lo;
+    h_view_hi = hi;
 }
 void setVView(float lo, float hi){
-    if(lo < hi){
-        v_view_lo = lo;
-        v_view_hi = hi;
+    if(lo >= hi){
+        printf("\nError: v_view_lo must be smaller than v_view_hi\n\n");
+        return;
     }
+
+    v_view_lo = lo;
+    v_view_hi = hi;
 }
 void integralStepsSet(int intstps){
+    if(intstps <= 0){
+        printf("\nERROR: integral_steps must be a positive non-zero integer\n\n");
+        return;
+    }
     integral_steps = intstps;
 }
-// int integralStepsGet(){
-//     return integral_steps;
-// }
 void setAxis(bool axis){
     draw_axis = axis;
 }
