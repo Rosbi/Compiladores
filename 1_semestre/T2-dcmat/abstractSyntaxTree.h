@@ -4,6 +4,11 @@
 typedef void* TreeNode;
 
 TreeNode nodeNew(int node_t, float node_v, TreeNode left, TreeNode right);
+
+TreeNode nodeGetLeft(TreeNode);
+TreeNode nodeGetRight(TreeNode);
+float nodeGetValue(TreeNode);
+
 void RpnWalk(TreeNode);
 void deleteTree(TreeNode);
 

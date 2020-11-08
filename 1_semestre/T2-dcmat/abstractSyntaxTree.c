@@ -21,6 +21,19 @@ TreeNode nodeNew(int node_t, float node_v, TreeNode left, TreeNode right){
     return aux;
 }
 
+TreeNode nodeGetLeft(TreeNode node){
+    struct ast *aux = node;
+    return aux->left;
+}
+TreeNode nodeGetRight(TreeNode node){
+    struct ast *aux = node;
+    return aux->right;
+}
+float nodeGetValue(TreeNode node){
+    struct ast *aux = node;
+    return aux->node_value;
+}
+
 void RpnWalk(TreeNode n){
     struct ast *node = n;
     if(!node)
