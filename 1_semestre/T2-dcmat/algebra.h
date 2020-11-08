@@ -21,6 +21,9 @@ int matrixSetColumns(Matrix mat, int columns);
 /* Encontra o determinante da matriz m através da técnica de fatoração LU */
 float matrixSolveDeterminant(Matrix m);
 
+/* Encontra a matriz X solução da matriz M(n x n+1) */
+void matrixSolveLinearSystem(Matrix m);
+
 /* Imprime a matriz interna do programa na tela */
 void matrixShow(Matrix);
 

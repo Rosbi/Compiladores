@@ -1,8 +1,10 @@
 #include<stdlib.h>
 #include<stdio.h>
+#include<math.h>
 #include"algebra.h"
 
 float ***lu_decomposition(float **srs_matrix, int matrix_size);
+float calculateDeterminant(float **lower, float **upper, int matrix_size);
 
 typedef struct matrix{
     float **m;
@@ -116,10 +118,7 @@ float matrixSolveDeterminant(Matrix m){
         return 0.0;
     }
 
-    float result = 1;
-    for(int i=0;i < mat->rows;i++){
-        result *= (lu[0][i][i]) * (lu[1][i][i]);
-    }
+    float result = calculateDeterminant(lu[0], lu[1], mat->rows);
 
     printf("\n%.6f\n\n", result);
 
@@ -136,10 +135,99 @@ float matrixSolveDeterminant(Matrix m){
 }
 void matrixSolveLinearSystem(Matrix m){
     matrix_t *mat = m;
-    if(mat->columns + 1 != mat->rows){
+    float ***lu = NULL;
+    float *x = NULL;
+    float *y = NULL;
+
+    if(!mat){
+        if(!matrix_g){
+            printf("\nNo Matrix defined!\n\n");
+            return;
+        }
+        mat = matrix_g;
+    }
+
+    /* checagem do formato da matriz */
+    if(mat->columns != mat->rows + 1){
         printf("\nMatrix format incorrect!\n\n");
         return;
     }
+
+    lu = lu_decomposition(mat->m, mat->rows);
+    if(!lu)
+        { goto ALLOC_ERROR; }
+
+    /* checa o conjunto solução */
+    float det = calculateDeterminant(lu[0], lu[1], mat->rows);
+    if(isnanf(det) || isinff(det)){
+        printf("\nSI - The Linear System has no solution\n\n");
+        return;
+    }else if(det==0.0){
+        printf("\nSPI - The Linear System has infinetly many solutions\n\n");
+        return;
+    }
+
+    /* resolve o sistema, caso seja possível e determinado */
+
+    // L*Y = B, L=Lower, Y= U*X, B=vetor resultado
+    y = malloc(mat->rows * sizeof(float));
+    if(!y)
+        { goto ALLOC_ERROR; }
+    for(int i=0;i < mat->rows;i++){
+        y[i] = mat->m[i][mat->columns-1];
+        for(int j=0;j < i;j++){
+            y[i] -= lu[0][i][j] * y[j];
+        }
+    }
+
+    // U*X = Y, U=Upper, X=vetor variáveis, Y=vetor resultante
+    x = malloc(mat->rows * sizeof(float));
+    if(!x)
+        { goto ALLOC_ERROR; }
+    
+    x[mat->rows - 1] = y[mat->rows - 1] / lu[1][mat->rows - 1][mat->rows - 1];
+    for(int i = mat->rows - 2;i>=0;i--){
+        x[i]=0;
+        for(int j=i+1;j < mat->rows;j++){  
+            x[i] -= lu[1][i][j] * x[j];
+        }
+        x[i] = (x[i] + y[i]) / lu[1][i][i];
+    }
+
+    /* imprime o vetor X */
+    printf("\n");
+    for(int i=0;i<mat->rows;i++){
+        printf("% .6f\n", x[i]);
+    }
+    printf("\n\n");
+
+    /* limpeza de memória */
+    free(x);
+    free(y);
+    for(int i=0;i < mat->rows;i++){
+        free(lu[0][i]);
+        free(lu[1][i]);
+    }
+    free(lu[0]);
+    free(lu[1]);
+    free(lu);
+    return;
+
+/* limpeza de memória na condição de erro de alocação */
+ALLOC_ERROR:
+    printf("\nAllocation error: solve linear system\n\n");
+    free(x);
+    free(y);
+    if(lu){
+        for(int i=0;i < mat->rows;i++){
+            free(lu[0][i]);
+            free(lu[1][i]);
+        }
+        free(lu[0]);
+        free(lu[1]);
+    }
+    free(lu);
+    return;
 }
 
 void matrixShow(Matrix m){
@@ -179,7 +267,14 @@ void matrixDelete(Matrix mat){
     free(m);
 }
 
-
+/* Funções auxiliares */
+float calculateDeterminant(float **lower, float **upper, int matrix_size){
+    float result = 1;
+    for(int i=0;i < matrix_size;i++){
+        result *= (lower[i][i]) * (upper[i][i]);
+    }
+    return result;
+}
 float*** lu_decomposition(float** src, int n){
     float ***r = NULL;
     float** upper = calloc(n, sizeof(float*));

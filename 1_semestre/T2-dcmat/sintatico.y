@@ -139,7 +139,7 @@ comando: CM_SHOW CM_SETTINGS						{ $$ = fn_SHOW_SETTINGS; }
 	   | CM_MATRIX EQUALS re_matrix					{ $$ = fn_MATRIX; aux_ptr = $3; }
 	   | CM_SHOW CM_MATRIX 							{ $$ = fn_SHOW_MATRIX; }
 	   | CM_SOLVE CM_DETERMINANT 					{ $$ = fn_SOLVE_DETERMINANT; }
-	   | CM_SOLVE CM_LINEAR_SYSTEM 					{ printf("funcao ainda nao implementada ;-;\n"); }
+	   | CM_SOLVE CM_LINEAR_SYSTEM 					{ $$ = fn_SOLVE_LINEAR_SYSTEM; }
 	   | CM_ABOUT 									{ $$ = fn_ABOUT; }
 ;
   
@@ -245,7 +245,7 @@ int main(int argc, char **argv)
 				matrixSolveDeterminant(NULL);
 				break;
 			case fn_SOLVE_LINEAR_SYSTEM:
-
+				matrixSolveLinearSystem(NULL);
 				break;
 			case fn_ABOUT:
 				about();
