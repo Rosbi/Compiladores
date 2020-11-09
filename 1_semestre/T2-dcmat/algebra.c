@@ -155,25 +155,30 @@ void matrixSolveLinearSystem(Matrix m){
     }
 
     lu = lu_decomposition(mat->m, mat->rows);
-    if(!lu)
-        { goto ALLOC_ERROR; }
+    if(!lu){ 
+        printf("\nAllocation error: solve linear system\n\n");
+        goto DEALLOC; 
+    }
 
     /* checa o conjunto solução */
     int sol_set = linearSystemSolutionSet(lu, mat->m, mat->rows);
     if(sol_set == -2){
         printf("\nSI - The Linear System has no solution\n\n");
-        return;
+        goto DEALLOC;
     }else if(sol_set == -1){
         printf("\nSPI - The Linear System has infinetly many solutions\n\n");
-        return;
+        goto DEALLOC;
     }
 
     /* resolve o sistema, caso seja possível e determinado */
 
     // L*Y = B, L=Lower, Y= U*X, B=vetor resultado
     y = malloc(mat->rows * sizeof(float));
-    if(!y)
-        { goto ALLOC_ERROR; }
+    if(!y){
+        printf("\nAllocation error: solve linear system\n\n");
+        goto DEALLOC;
+    }
+
     for(int i=0;i < mat->rows;i++){
         y[i] = mat->m[i][mat->columns-1];
         for(int j=0;j < i;j++){
@@ -183,8 +188,10 @@ void matrixSolveLinearSystem(Matrix m){
 
     // U*X = Y, U=Upper, X=vetor variáveis, Y=vetor resultante
     x = malloc(mat->rows * sizeof(float));
-    if(!x)
-        { goto ALLOC_ERROR; }
+    if(!x){
+        printf("\nAllocation error: solve linear system\n\n");
+        goto DEALLOC;
+    }
     
     x[mat->rows - 1] = y[mat->rows - 1] / lu[1][mat->rows - 1][mat->rows - 1];
     for(int i = mat->rows - 2;i>=0;i--){
@@ -202,21 +209,8 @@ void matrixSolveLinearSystem(Matrix m){
     }
     printf("\n\n");
 
-    /* limpeza de memória */
-    free(x);
-    free(y);
-    for(int i=0;i < mat->rows;i++){
-        free(lu[0][i]);
-        free(lu[1][i]);
-    }
-    free(lu[0]);
-    free(lu[1]);
-    free(lu);
-    return;
-
 /* limpeza de memória na condição de erro de alocação */
-ALLOC_ERROR:
-    printf("\nAllocation error: solve linear system\n\n");
+DEALLOC:
     free(x);
     free(y);
     if(lu){

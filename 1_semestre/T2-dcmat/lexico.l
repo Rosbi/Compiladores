@@ -3,6 +3,7 @@
 
 #include <sintatico.tab.h>
 #include<string.h>
+void flush_current_buffer();
 
 %}
 %%
@@ -54,10 +55,14 @@
 ":"             { return COLON; }
 ","             { return COMMA; }
 
-\n          { return EOL; yy_flush_buffer(YY_CURRENT_BUFFER); }
+\n          { return EOL; flush_current_buffer(); }
 [ \t]       { /* espaço em branco/tabulação */ }
-[a-zA-Z_]+  { printf("Palavra nao reconhecida: %s\n", yytext); yy_flush_buffer(YY_CURRENT_BUFFER); return MISTERY; }
-.           { printf("Simbolo invalido -> %s\n", yytext); yy_flush_buffer(YY_CURRENT_BUFFER); return MISTERY; }
+[a-zA-Z_]+  { printf("Palavra nao reconhecida: %s\n", yytext); flush_current_buffer(); return MISTERY; }
+.           { printf("Simbolo invalido -> %s\n", yytext); flush_current_buffer(); return MISTERY; }
 <<EOF>>     { return END_OF_FILE; }
 
 %%
+
+void flush_current_buffer(){
+    yy_flush_buffer(YY_CURRENT_BUFFER);
+}

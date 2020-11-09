@@ -8,6 +8,7 @@
 #include"calculus.h"
 extern int yylex();
 extern char* yytext;
+extern void flush_current_buffer();
 void yyerror(char *s);
 void resetAuxValues();
 void about();
@@ -160,7 +161,8 @@ re_matrix1: COMMA LBRACK matrix_elem matrix_value1 RBRACK re_matrix1 { $$ = node
 matrix_value1: COMMA matrix_elem matrix_value1 { $$ = nodeNew(REAL, $2, NULL, $3); }
 			 | /* epsilon */ { $$ = NULL; }
 ;
-matrix_elem: int_num { $$ = $1; }
+matrix_elem: int_num  { $$ = $1; }
+		   | real_num { $$ = $1; }
 ;
 
 expression: exp2	{ $$ = $1; }
@@ -195,15 +197,17 @@ term: NUM	{ $$ = nodeNew(NUM, $1, NULL, NULL); }
 
 void yyerror(char *s)
 {
-	resetAuxValues();
 	if(strcmp(yytext, "")!=0)
 		{ printf("Erro de sintaxe: [%s]\n", *yytext=='\n'?"\\n":yytext); }
+	resetAuxValues();
+	flush_current_buffer();
 }
 
 int main(int argc, char **argv)
 {
+	// char input[256];
 	while(!quit){
-		printf("> ");	
+		printf("> ");
 		if(!yyparse()){
 
 		}
