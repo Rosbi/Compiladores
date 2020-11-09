@@ -5,6 +5,7 @@
 
 float ***lu_decomposition(float **srs_matrix, int matrix_size);
 float calculateDeterminant(float **lower, float **upper, int matrix_size);
+int linearSystemSolutionSet(float ***lu, float **result, int size);
 
 typedef struct matrix{
     float **m;
@@ -158,11 +159,11 @@ void matrixSolveLinearSystem(Matrix m){
         { goto ALLOC_ERROR; }
 
     /* checa o conjunto solução */
-    float det = calculateDeterminant(lu[0], lu[1], mat->rows);
-    if(isnanf(det) || isinff(det)){
+    int sol_set = linearSystemSolutionSet(lu, mat->m, mat->rows);
+    if(sol_set == -2){
         printf("\nSI - The Linear System has no solution\n\n");
         return;
-    }else if(det==0.0){
+    }else if(sol_set == -1){
         printf("\nSPI - The Linear System has infinetly many solutions\n\n");
         return;
     }
@@ -323,4 +324,31 @@ ALLOC_ERROR:
     free(upper);
     free(lower);
     return NULL;
+}
+
+// retorna -2 se SI
+// retorna -1 se SPI
+// retorna  0 se SPD
+int linearSystemSolutionSet(float ***lu, float **result, int size){
+    int qt_zeroes;
+
+    for(int i=0;i<size;i++){
+        qt_zeroes = 0;
+        for(int j=0;j<size;j++){
+            if(lu[1][i][j] == 0)
+                { qt_zeroes++; }
+            if(isinff(lu[1][i][j]) || isnanf(lu[1][i][j]))
+                { return -2; }
+        }
+        if(qt_zeroes == size){
+            float cont = result[i][size];
+            for(int c=0;c<i;c++){
+                cont = cont - (cont * lu[0][i][c]);
+            }
+            if(cont != 0)
+                { return -1; }
+            return -2;
+        }
+    }
+    return 0;
 }
