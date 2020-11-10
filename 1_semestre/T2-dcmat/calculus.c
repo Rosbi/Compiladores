@@ -1,6 +1,8 @@
 #include<stdio.h>
 #include"calculus.h"
 
+float riemannSum(TreeNode function, float lo_bound, float x_step);
+
 const float h_view_lo_default    = -6.5;
 const float h_view_hi_default    =  6.5;
 const float v_view_lo_default    = -3.5;
@@ -15,6 +17,8 @@ float v_view_hi    =  3.5;
 int integral_steps = 1000;
 bool connect_dots  = false;
 bool draw_axis     = true;
+
+TreeNode function = NULL;
 
 void showSettings(){
     printf("\n");
@@ -66,3 +70,43 @@ void setAxis(bool axis){
     draw_axis = axis;
 }
 
+void integrate(TreeNode function, float inf_limit, float sup_limit){
+    if(!function){ 
+        printf("\nError: no function passed\n\n");
+        return;
+    }
+
+    if(inf_limit > sup_limit){
+        printf("\nERROR: lower limit must be smaller than upper limit\n\n");
+        return;
+    }else if(inf_limit == sup_limit){
+        printf("\n%f\n\n", 0.0);
+        return;
+    }
+
+    float x_interval = (sup_limit - inf_limit) / integral_steps;
+    float result = riemannSum(function, inf_limit, x_interval);
+    printf("\n%f\n\n", result);
+}
+
+/* funções auxiliares */
+float riemannSum(TreeNode function, float lo_bound, float x_step){
+    float x = lo_bound, height, sum = 0;
+    int error = 0;
+    for(int i = 0; i < integral_steps; i++, x+=x_step){
+        height = solveForX(function, (x+(x_step/2)), &error);
+        // printf("f(%f) -> %f\n", x, height);
+        if(error){
+            printf("\nThere was an error with the Riemann Sum, we are sorry for the inconvenient\n\n");
+            return 0.0;
+        }
+        sum += height;
+    }
+    return sum * x_step;
+}
+
+void functionGlobalDelete(){
+    if(function){
+        deleteTree(function);
+    }
+}

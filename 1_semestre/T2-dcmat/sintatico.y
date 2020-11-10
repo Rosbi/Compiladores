@@ -12,6 +12,7 @@ extern void flush_current_buffer();
 void yyerror(char *s);
 void resetAuxValues();
 void about();
+void cleanUp();
 
 bool quit = false;
 int function_to_be_called=-1;
@@ -101,6 +102,7 @@ enum functions
 /* declare types */
 %type <real> REAL
 %type <real> real_num
+%type <real> any_num
 %type <real> matrix_elem
 %type <integer> int_num
 %type <integer> VAR
@@ -128,22 +130,25 @@ start: expression EOL		 { RpnWalk($1);printf("\n");deleteTree($1);return 0; }
 
 comando: CM_SHOW CM_SETTINGS						{ $$ = fn_SHOW_SETTINGS; }
 	   | CM_RESET CM_SETTINGS						{ $$ = fn_RESET_SETTINGS; }
-	   | CM_SET CM_H_VIEW real_num COLON real_num	{ $$ = fn_SET_H_VIEW; aux_float[0]=$3;aux_float[1]=$5; }
-	   | CM_SET CM_V_VIEW real_num COLON real_num	{ $$ = fn_SET_V_VIEW; aux_float[0]=$3;aux_float[1]=$5; }
+	   | CM_SET CM_H_VIEW any_num COLON any_num		{ $$ = fn_SET_H_VIEW; aux_float[0]=$3;aux_float[1]=$5; }
+	   | CM_SET CM_V_VIEW any_num COLON any_num		{ $$ = fn_SET_V_VIEW; aux_float[0]=$3;aux_float[1]=$5; }
 	   | CM_SET CM_AXIS CM_ON						{ $$ = fn_SET_AXIS_ON; }
 	   | CM_SET CM_AXIS CM_OFF						{ $$ = fn_SET_AXIS_OFF; }
 	   | CM_PLOT									{ printf("funcao ainda nao implementada ;-;\n"); }
-	   | CM_PLOT LPAREN expression RPAREN 			{ printf("funcao ainda nao implementada ;-;\n"); }
+	   | CM_PLOT LPAREN expression RPAREN 			{ /*solveForX($3, 3.0, &aux_int[0]); $$ = fn_ABOUT; deleteTree($3);*/ }
 	   | CM_SET CM_INTEGRAL CM_STEPS int_num		{ $$ = fn_SET_INTEGRAL_STEPS; aux_int[0] = $4; }
-	   | CM_INTEGRATE 								{ printf("funcao ainda nao implementada ;-;\n"); }
-	   | CM_INTEGRATE LPAREN expression RPAREN		{ printf("funcao ainda nao implementada ;-;\n"); }
+	   | CM_INTEGRATE LPAREN any_num COLON 
+			any_num COMMA expression RPAREN			{ $$ = fn_INTEGRATE; aux_float[0]=$3; aux_float[1]=$5; aux_ptr=$7; }
 	   | CM_MATRIX EQUALS re_matrix					{ $$ = fn_MATRIX; aux_ptr = $3; }
 	   | CM_SHOW CM_MATRIX 							{ $$ = fn_SHOW_MATRIX; }
 	   | CM_SOLVE CM_DETERMINANT 					{ $$ = fn_SOLVE_DETERMINANT; }
 	   | CM_SOLVE CM_LINEAR_SYSTEM 					{ $$ = fn_SOLVE_LINEAR_SYSTEM; }
 	   | CM_ABOUT 									{ $$ = fn_ABOUT; }
 ;
-  
+
+any_num: int_num  { $$ = $1; }
+	   | real_num { $$ = $1; }
+;
 int_num: ADD NUM { $$ = $2; }
 	   | SUB NUM { $$ = $2*(-1); }
 	   | NUM	 { $$ = $1; }
@@ -161,8 +166,7 @@ re_matrix1: COMMA LBRACK matrix_elem matrix_value1 RBRACK re_matrix1 { $$ = node
 matrix_value1: COMMA matrix_elem matrix_value1 { $$ = nodeNew(REAL, $2, NULL, $3); }
 			 | /* epsilon */ { $$ = NULL; }
 ;
-matrix_elem: int_num  { $$ = $1; }
-		   | real_num { $$ = $1; }
+matrix_elem: any_num  { $$ = $1; }
 ;
 
 expression: exp2	{ $$ = $1; }
@@ -176,8 +180,8 @@ exp2: exp3			{ $$ = $1; }
 ;
 exp3: exp4			{ $$ = $1; }
 	| exp3 POW exp4 { $$ = nodeNew(POW, 0.0, $1, $3); }
-	| ADD exp4		{ }
-	| SUB exp4		{ }
+	| ADD exp4		{ $$ = nodeNew(ADD, 0.0, nodeNew(NUM, 0.0, NULL, NULL), $2); }
+	| SUB exp4		{ $$ = nodeNew(SUB, 0.0, nodeNew(NUM, 0.0, NULL, NULL), $2); }
 ;
 exp4: exp5			{ $$ = $1; }
 	| SEN LPAREN expression RPAREN { $$ = nodeNew(SEN, 0.0, $3, NULL); }
@@ -237,7 +241,8 @@ int main(int argc, char **argv)
 				integralStepsSet(aux_int[0]);
 				break;
 			case fn_INTEGRATE:
-
+				integrate(aux_ptr, aux_float[0], aux_float[1]);
+				deleteTree(aux_ptr);
 				break;
 			case fn_MATRIX:
 				matrixGlobalSet(aux_ptr);
@@ -257,7 +262,7 @@ int main(int argc, char **argv)
 		}
 		resetAuxValues();
 	}
-
+	cleanUp();
 	return 0;
 }
 
@@ -276,4 +281,9 @@ void about(){
 	printf("|   201800560051 - Eric Augusto Nascimento   |\n");
 	printf("|                                            |\n");
 	printf("+--------------------------------------------+\n");
+}
+
+void cleanUp(){
+	functionGlobalDelete();
+	matrixGlobalDelete();
 }

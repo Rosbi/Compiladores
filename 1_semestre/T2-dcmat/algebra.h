@@ -29,11 +29,6 @@ void matrixShow(Matrix);
 
 /* Deleta a matriz passada */
 void matrixDelete(Matrix);
-/*
-matrixNew()
-matrixShow()
-solveDeterminant()
-solveLinearSystem()
-*/
+void matrixGlobalDelete();
 
 #endif

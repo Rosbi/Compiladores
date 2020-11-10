@@ -1,7 +1,7 @@
 FLEX=flex
 BISON=bison
 CC=gcc
-FLAGS=-g -Wall
+FLAGS=-g -Wall -lm
 
 PROGRAMA = dcmat
 LEXICO = lexico.l

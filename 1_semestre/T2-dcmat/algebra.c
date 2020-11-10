@@ -257,6 +257,8 @@ void matrixShow(Matrix m){
 }
 void matrixDelete(Matrix mat){
     matrix_t *m = mat;
+    if(!m)
+        { return; }
     for(int i=0;i<MATRIX_MAX_SIZE;i++)
         free(m->m[i]);
     free(m);
@@ -345,4 +347,10 @@ int linearSystemSolutionSet(float ***lu, float **result, int size){
         }
     }
     return 0;
+}
+
+void matrixGlobalDelete(){
+    if(matrix_g){
+        matrixDelete(matrix_g);
+    }
 }
