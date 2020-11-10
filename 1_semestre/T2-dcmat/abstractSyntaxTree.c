@@ -1,5 +1,6 @@
 #include<stdlib.h>
 #include<stdio.h>
+#include<math.h>
 #include"abstractSyntaxTree.h"
 #include"sintatico.tab.h"
 
@@ -72,9 +73,7 @@ void RpnWalk(TreeNode n){
         case ABS:  
             printf("ABS ");
             break;
-        case NUM:  
-            printf("%d ", (int)node->node_value);
-            break;
+        case NUM:
         case REAL: 
             printf("%f ", node->node_value);
             break;
@@ -82,6 +81,68 @@ void RpnWalk(TreeNode n){
             printf("x ");
             break;
     }
+}
+
+float RpnSolve(struct ast *node, float x){
+    if(!node)
+        { return 0.0; }
+
+    float no_l, no_r;
+    float result = 0.0;
+    no_l = RpnSolve(node->left, x);
+    no_r = RpnSolve(node->right, x);
+    switch(node->node_type){
+        case ADD:  
+            result = no_l + no_r;
+            break;
+        case SUB:  
+            result = no_l - no_r;
+            break;
+        case MUL:  
+            result = no_l * no_r;
+            break;
+        case DIV:  
+            result = no_l / no_r;
+            break;
+        case POW:  
+            result = powf(no_l, no_r);
+            break;
+        case MOD:  
+            result = (int)no_l % (int)no_r;
+            break;
+        case SEN:  
+            result = sinf(no_l);
+            break;
+        case COS:  
+            result = cosf(no_l);
+            break;
+        case TAN:  
+            result = tanf(no_l);
+            break;
+        case ABS:  
+            result = fabsf(no_l);
+            break;
+        case NUM:  
+            result = node->node_value;
+            break;
+        case REAL: 
+            result = node->node_value;
+            break;
+        case VAR:  
+            result = x;
+            break;
+    }
+    return result;
+}
+float solveForX(TreeNode n, float x, int *error){
+    struct ast *node = n;
+    *error = 0;
+    if(!node){ 
+        *error = -1;
+        return 0.0; 
+    }
+    
+    return RpnSolve(node, x);
 }
 
 void deleteTree(TreeNode n){

@@ -10,6 +10,8 @@ TreeNode nodeGetRight(TreeNode);
 float nodeGetValue(TreeNode);
 
 void RpnWalk(TreeNode);
+float solveForX(TreeNode, float x, int *error);
+
 void deleteTree(TreeNode);
 
 #endif
