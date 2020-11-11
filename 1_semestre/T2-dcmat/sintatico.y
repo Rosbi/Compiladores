@@ -134,8 +134,8 @@ comando: CM_SHOW CM_SETTINGS						{ $$ = fn_SHOW_SETTINGS; }
 	   | CM_SET CM_V_VIEW any_num COLON any_num		{ $$ = fn_SET_V_VIEW; aux_float[0]=$3;aux_float[1]=$5; }
 	   | CM_SET CM_AXIS CM_ON						{ $$ = fn_SET_AXIS_ON; }
 	   | CM_SET CM_AXIS CM_OFF						{ $$ = fn_SET_AXIS_OFF; }
-	   | CM_PLOT									{ printf("funcao ainda nao implementada ;-;\n"); }
-	   | CM_PLOT LPAREN expression RPAREN 			{ /*solveForX($3, 3.0, &aux_int[0]); $$ = fn_ABOUT; deleteTree($3);*/ }
+	   | CM_PLOT									{ $$ = fn_PLOT; aux_ptr=NULL; }
+	   | CM_PLOT LPAREN expression RPAREN 			{ $$ = fn_PLOT; aux_ptr=$3; }
 	   | CM_SET CM_INTEGRAL CM_STEPS int_num		{ $$ = fn_SET_INTEGRAL_STEPS; aux_int[0] = $4; }
 	   | CM_INTEGRATE LPAREN any_num COLON 
 			any_num COMMA expression RPAREN			{ $$ = fn_INTEGRATE; aux_float[0]=$3; aux_float[1]=$5; aux_ptr=$7; }
@@ -235,7 +235,7 @@ int main(int argc, char **argv)
 				setAxis(false);
 				break;
 			case fn_PLOT:
-
+				plot(aux_ptr);
 				break;
 			case fn_SET_INTEGRAL_STEPS:
 				integralStepsSet(aux_int[0]);

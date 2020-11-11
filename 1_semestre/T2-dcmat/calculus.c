@@ -1,7 +1,15 @@
 #include<stdio.h>
+#include<math.h>
 #include"calculus.h"
 
-float riemannSum(TreeNode function, float lo_bound, float x_step);
+#define VIEW_WIDTH 80
+#define VIEW_HEIGHT 25
+
+typedef struct view_t{
+    float x;
+    float y;
+    char pixel;
+}View;
 
 const float h_view_lo_default    = -6.5;
 const float h_view_hi_default    =  6.5;
@@ -18,7 +26,13 @@ int integral_steps = 1000;
 bool connect_dots  = false;
 bool draw_axis     = true;
 
-TreeNode function = NULL;
+TreeNode function_g = NULL;
+View screen[VIEW_WIDTH][VIEW_HEIGHT];
+
+float riemannSum(TreeNode function, float lo_bound, float x_step);
+void screenViewRatio(float *x_step, float *y_step);
+void mergeFunctionToScreen(float *y_values);
+void printScreen();
 
 void showSettings(){
     printf("\n");
@@ -89,6 +103,39 @@ void integrate(TreeNode function, float inf_limit, float sup_limit){
     printf("\n%f\n\n", result);
 }
 
+void plot(TreeNode function){
+    if(!function){
+        if(!function_g)
+            { return; }
+        function = function_g;
+    }else{
+        function_g = function;
+    }
+
+    // Array contendo a posição Y de para cada X do gráfico
+    float y_values[VIEW_WIDTH];
+    float x_step, y_step;
+    int error = 0;
+    screenViewRatio(&x_step, &y_step);
+
+    for(int i=0;i<VIEW_WIDTH;i++){
+        y_values[i] = solveForX(function, (h_view_lo + x_step*i), &error);
+        if(error){
+            printf("Houve um erro durante a avaliação da função passada, pedimos desculpas pelo incomodo\n");
+            return;
+        }
+    }
+
+    mergeFunctionToScreen(y_values);
+    printScreen();
+}
+
+void functionGlobalDelete(){
+    if(function_g){
+        deleteTree(function_g);
+    }
+}
+
 /* funções auxiliares */
 float riemannSum(TreeNode function, float lo_bound, float x_step){
     float x = lo_bound, height, sum = 0;
@@ -104,9 +151,71 @@ float riemannSum(TreeNode function, float lo_bound, float x_step){
     }
     return sum * x_step;
 }
+void screenViewRatio(float *x_step, float *y_step){
+    *x_step = (h_view_hi - h_view_lo) / VIEW_WIDTH;
+    *y_step = (v_view_hi - v_view_lo) / VIEW_HEIGHT;
 
-void functionGlobalDelete(){
-    if(function){
-        deleteTree(function);
+    //Calcula a coordenada em cada pixel da tela, e torna o pixel vazio
+    for(int i=0; i<VIEW_WIDTH; i++){
+        for(int j=0; j<VIEW_HEIGHT; j++){
+            screen[i][j].x = h_view_lo + (*x_step * i);
+            screen[i][j].y = v_view_lo + (*y_step * j);
+            screen[i][j].pixel = ' ';
+        }
+    }
+
+    //Coloca o eixo na matriz, caso a opção esteja ligada
+    if(draw_axis){
+        float x_steps_to_zero = -1;
+        float y_steps_to_zero = -1;
+        //Eixo X
+        if(v_view_lo * v_view_hi <= 0){
+            y_steps_to_zero = v_view_lo / (v_view_hi - v_view_lo);
+            y_steps_to_zero = roundf(fabsf(y_steps_to_zero * VIEW_HEIGHT));
+            for(int i=0; i<VIEW_WIDTH; i++){
+                screen[i][(int)y_steps_to_zero].pixel = '-';
+            }
+        }
+        //Eixo Y
+        if(h_view_lo * h_view_hi <= 0){
+            x_steps_to_zero = h_view_lo / (h_view_hi - h_view_lo);
+            x_steps_to_zero = roundf(fabsf(x_steps_to_zero * VIEW_WIDTH));
+            for(int i=0; i<VIEW_HEIGHT; i++){
+                screen[(int)x_steps_to_zero][i].pixel = '|';
+            }
+            //Intersecção dos dois eixos
+            if(y_steps_to_zero != -1)
+                { screen[(int)x_steps_to_zero][(int)y_steps_to_zero].pixel = '+'; }
+        }
+    }
+}
+void mergeFunctionToScreen(float *y_values){
+    float steps_to_y;
+    float range = v_view_hi - v_view_lo;
+    int j;
+    for(int i=0;i<VIEW_WIDTH;i++){
+        if(y_values[i] >= v_view_lo && y_values[i] <= v_view_hi){
+            // steps_to_y = fmodf(y_values[i], range) / range;
+            // printf("y: % 2.3f | %%: %.6f | ", y_values[i], steps_to_y);
+            // steps_to_y = roundf(fabsf(steps_to_y * VIEW_HEIGHT));
+            // printf("offset: %.6f\n", steps_to_y);
+            // screen[i][(int)steps_to_y].pixel = '*';
+
+            for(j=1;j<VIEW_HEIGHT;j++){
+                if(screen[i][j+1].y >= y_values[i]){
+                    screen[i][j].pixel = '*';
+                    break;
+                }
+            }
+        }
+        
+    }
+}
+void printScreen(){
+    for(int y=VIEW_HEIGHT-1;y>=0;y--){
+        for(int x=0;x<VIEW_WIDTH;x++){
+            printf("%c", screen[x][y].pixel);
+        }
+        printf("\n");
     }
 }

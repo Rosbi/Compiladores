@@ -14,6 +14,8 @@ void setAxis(bool);
 /* calcula a integral definida da função, utilizando a soma de Riemann (ponto médio) */
 void integrate(TreeNode function, float inf_limit, float sup_limit);
 
+void plot(TreeNode function);
+
 void functionGlobalDelete();
 
 #endif
