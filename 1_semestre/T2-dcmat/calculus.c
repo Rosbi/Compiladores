@@ -105,8 +105,10 @@ void integrate(TreeNode function, float inf_limit, float sup_limit){
 
 void plot(TreeNode function){
     if(!function){
-        if(!function_g)
-            { return; }
+        if(!function_g){ 
+            printf("\n No Function defined!\n\n");
+            return; 
+        }
         function = function_g;
     }else{
         function_g = function;
@@ -171,7 +173,7 @@ void screenViewRatio(float *x_step, float *y_step){
         //Eixo X
         if(v_view_lo * v_view_hi <= 0){
             y_steps_to_zero = v_view_lo / (v_view_hi - v_view_lo);
-            y_steps_to_zero = roundf(fabsf(y_steps_to_zero * VIEW_HEIGHT));
+            y_steps_to_zero = floorf(fabsf(y_steps_to_zero * (VIEW_HEIGHT-1)));
             for(int i=0; i<VIEW_WIDTH; i++){
                 screen[i][(int)y_steps_to_zero].pixel = '-';
             }
@@ -179,7 +181,7 @@ void screenViewRatio(float *x_step, float *y_step){
         //Eixo Y
         if(h_view_lo * h_view_hi <= 0){
             x_steps_to_zero = h_view_lo / (h_view_hi - h_view_lo);
-            x_steps_to_zero = roundf(fabsf(x_steps_to_zero * VIEW_WIDTH));
+            x_steps_to_zero = floorf(fabsf(x_steps_to_zero * (VIEW_WIDTH-1)));
             for(int i=0; i<VIEW_HEIGHT; i++){
                 screen[(int)x_steps_to_zero][i].pixel = '|';
             }
@@ -190,8 +192,8 @@ void screenViewRatio(float *x_step, float *y_step){
     }
 }
 void mergeFunctionToScreen(float *y_values){
-    float steps_to_y;
-    float range = v_view_hi - v_view_lo;
+    // float steps_to_y;
+    // float range = v_view_hi - v_view_lo;
     int j;
     for(int i=0;i<VIEW_WIDTH;i++){
         if(y_values[i] >= v_view_lo && y_values[i] <= v_view_hi){
@@ -200,13 +202,19 @@ void mergeFunctionToScreen(float *y_values){
             // steps_to_y = roundf(fabsf(steps_to_y * VIEW_HEIGHT));
             // printf("offset: %.6f\n", steps_to_y);
             // screen[i][(int)steps_to_y].pixel = '*';
-
-            for(j=1;j<VIEW_HEIGHT;j++){
-                if(screen[i][j+1].y >= y_values[i]){
+            
+            // if(y_values[i] < screen[i][1].y){
+            //     screen[i][0].pixel = '*';
+            // }
+            for(j=VIEW_HEIGHT-1;j>=0;j--){
+                if(screen[i][j].y <= y_values[i]){
                     screen[i][j].pixel = '*';
                     break;
                 }
             }
+            // if(y_values[i] > screen[i][VIEW_HEIGHT-2].y){
+            //     screen[i][j].pixel = '*';
+            // }
         }
         
     }
