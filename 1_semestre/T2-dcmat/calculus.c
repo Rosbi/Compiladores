@@ -173,7 +173,7 @@ void screenViewRatio(float *x_step, float *y_step){
         //Eixo X
         if(v_view_lo * v_view_hi <= 0){
             y_steps_to_zero = v_view_lo / (v_view_hi - v_view_lo);
-            y_steps_to_zero = floorf(fabsf(y_steps_to_zero * (VIEW_HEIGHT-1)));
+            y_steps_to_zero = roundf(fabsf(y_steps_to_zero * (VIEW_HEIGHT-1)));
             for(int i=0; i<VIEW_WIDTH; i++){
                 screen[i][(int)y_steps_to_zero].pixel = '-';
             }
@@ -181,7 +181,7 @@ void screenViewRatio(float *x_step, float *y_step){
         //Eixo Y
         if(h_view_lo * h_view_hi <= 0){
             x_steps_to_zero = h_view_lo / (h_view_hi - h_view_lo);
-            x_steps_to_zero = floorf(fabsf(x_steps_to_zero * (VIEW_WIDTH-1)));
+            x_steps_to_zero = roundf(fabsf(x_steps_to_zero * (VIEW_WIDTH-1)));
             for(int i=0; i<VIEW_HEIGHT; i++){
                 screen[(int)x_steps_to_zero][i].pixel = '|';
             }
