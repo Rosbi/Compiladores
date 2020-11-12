@@ -67,6 +67,8 @@ ERROR:
 
 void matrixGlobalSet(Matrix m){
     matrix_t *mat = m;
+    if(!mat)
+        { return; }
     if(matrix_g)
         { matrixDelete(matrix_g); }
 
@@ -331,17 +333,17 @@ int linearSystemSolutionSet(float ***lu, float **result, int size){
     for(int i=0;i<size;i++){
         qt_zeroes = 0;
         for(int j=0;j<size;j++){
-            if(lu[1][i][j] == 0)
+            if(lu[1][i][j] == 0 || isinff(lu[1][i][j]) || isnanf(lu[1][i][j]))
                 { qt_zeroes++; }
-            if(isinff(lu[1][i][j]) || isnanf(lu[1][i][j]))
-                { return -2; }
+            // if(isinff(lu[1][i][j]) || isnanf(lu[1][i][j]))
+            //     { return -2; }
         }
         if(qt_zeroes == size){
             float cont = result[i][size];
             for(int c=0;c<i;c++){
-                cont = cont - (cont * lu[0][i][c]);
+                cont = cont - (result[c][size] * lu[0][i][c]);
             }
-            if(cont != 0)
+            if(cont == 0)
                 { return -1; }
             return -2;
         }
