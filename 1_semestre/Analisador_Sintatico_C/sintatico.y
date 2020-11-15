@@ -274,7 +274,11 @@ void yyerror(char *s)
 			printf("error:lexical:%d:%d: %s", linhas, colunas, yytext);
 			break;
 		case END_OF_FILE:
-			printf("error:syntax:%d:%d: expected declaration or statement at end of input", linhas, colunas);
+			printf("error:syntax:%d:%d: expected declaration or statement at end of input\n", linhas, colunas);
+			printLine(in_file, linhas);
+			for(int i=1;i<colunas;i++)
+				{ printf(" "); }
+			printf("^");
 			break;
 		default:
 			colunas -= strlen(yytext);
@@ -308,8 +312,10 @@ void printLine(FILE* in, int n){
 			{ break; }
 	}
 
-	do{
-		c = fgetc(in);
+	c = fgetc(in);
+	while(c!='\n' && c!=EOF){
 		printf("%c", c);
-	}while(c!='\n' && c!=EOF);
+		c = fgetc(in);
+	}
+	printf("\n");
 }

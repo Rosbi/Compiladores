@@ -1,7 +1,7 @@
 FLEX=flex
 BISON=bison
 CC=gcc
-FLAGS=-g -Wall -lm -std=c99
+FLAGS=-std=c99
 
 PROGRAMA = sintatico
 LEXICO = lexico.l

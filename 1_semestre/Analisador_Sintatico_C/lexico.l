@@ -8,11 +8,14 @@
 int colunas = 1;
 int linhas = 1;
 
-int charFrequency(const char *str, char ch){
+int charFrequency(const char *str, char ch, int* col){
 	int count=0;
 	for(int i=0;i<strlen(str);i++){
-		if(str[i]==ch)
+		*col += 1;
+		if(str[i]==ch){
 			count++;
+			*col = 1;
+		}
 	}
 	return count;
 }
@@ -102,14 +105,15 @@ int charFrequency(const char *str, char ch){
 ([a-z]|"_"|[A-Z])([a-z]|"_"|[A-Z]|[0-9])*	{ colunas+=strlen(yytext); return IDENTIFIER; }
 
 	/* comments */
-"//".*[\n]		{ return LINE_COMMENT; }
-("/*"([^*]|[\n]|("*"+([^*/]|[\n])))*"*"+"/")	{ linhas+=charFrequency(yytext, '\n'); return BLOCK_COMMENT; }
+"//".*[\n]		{ linhas++; colunas=1; }
+"//".*			{ return END_OF_FILE; }
+("/*"([^*]|[\n]|("*"+([^*/]|[\n])))*"*"+"/")	{ linhas+=charFrequency(yytext, '\n', &colunas); }
 ("/*"([^*]|[\n]|("*"+([^*/]|[\n])))*)			{ return UNTERMINATED_COMMENT; }
 
 	/* misc */
 [ \r\t\f]	{ colunas++; }
 [\n]		{ linhas++; colunas = 1; }
 <<EOF>>		{ return END_OF_FILE; }
-.			{ return UNKNOWN_CHAR; }
+.			{ colunas++; return UNKNOWN_CHAR; }
 
 %%
