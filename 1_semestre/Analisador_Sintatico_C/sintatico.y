@@ -77,6 +77,15 @@ FILE* in_file = NULL;
 %token UNKNOWN_CHAR
 %token END_OF_FILE
 
+	/* unused tokens */
+%token BREAK_T
+%token SWITCH_T
+%token CASE_T
+%token DEFAULT_T
+%token TYPEDEF_T
+%token STRUCT_T
+%token POINTER_DEFERENCE
+
 %start programa
 
 %%
@@ -227,9 +236,9 @@ exp_unary: exp_postfix			{}
 ;
 
 exp_postfix: exp_prim				{}
-		   | exp_postfix array		{}
 		   | exp_postfix INC		{}
 		   | exp_postfix DEC		{}
+		   | exp_postfix LBRACK expressao RBRACK			{}
 		   | exp_postfix LPAREN RPAREN						{}
 		   | exp_postfix LPAREN exp_atr exp_postfix1 RPAREN	{}
 ;

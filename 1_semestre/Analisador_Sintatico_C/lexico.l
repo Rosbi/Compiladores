@@ -29,17 +29,17 @@ int charFrequency(const char *str, char ch, int* col){
 "int"		{ colunas+=3; return INT_T; }
 "char"		{ colunas+=4; return CHAR_T; }
 "return"	{ colunas+=6; return RETURN_T; }
-	/* // "break"		{ return ; }
-	// "switch"	{ return ; }
-	// "case"		{ return ; }
-	// "default"	{ return ; } */
+"break"		{ colunas+=5; return BREAK_T; }
+"switch"	{ colunas+=6; return SWITCH_T; }
+"case"		{ colunas+=4; return CASE_T; }
+"default"	{ colunas+=7; return DEFAULT_T; }
 "do"		{ colunas+=2; return DO_T; }
 "while"		{ colunas+=5; return WHILE_T; }
 "for"		{ colunas+=3; return FOR_T; }
 "if"		{ colunas+=2; return IF_T; }
 "else"		{ colunas+=4; return ELSE_T; }
-	/* // "typedef"	{ return ; }
-	// "struct"	{ return ; }*/
+"typedef"	{ colunas+=7; return TYPEDEF_T; }
+"struct"	{ colunas+=6; return STRUCT_T; }
 
 	/* operators */
 		/*matematicos*/
@@ -84,7 +84,7 @@ int charFrequency(const char *str, char ch, int* col){
 "["		{ colunas+=1; return LBRACK; }
 "]"		{ colunas+=1; return RBRACK; }
 "?"		{ colunas+=1; return QUEST_MARK; }
-	/* // "->"	{ return ; } */
+"->"	{ return POINTER_DEFERENCE; }
 
 	/* preprocessador */
 "#"			{ colunas+=1; return NUMBER_SIGN; }
@@ -101,7 +101,6 @@ int charFrequency(const char *str, char ch, int* col){
 [0-9]+								{ colunas+=strlen(yytext); return NUM_INT; }
 "\'""\\"?."\'"						{ colunas+=strlen(yytext); return CHARACTER; }
 \"(\\.|[^"\\])*\"					{ colunas+=strlen(yytext); return STRING; }
-	/*[_a-zA-z][_a-zA-Z0-9]*	{printf("IDENTIFIER(%s)\n", yytext);	line_chars+=strlen(yytext);}*/
 ([a-z]|"_"|[A-Z])([a-z]|"_"|[A-Z]|[0-9])*	{ colunas+=strlen(yytext); return IDENTIFIER; }
 
 	/* comments */

@@ -1,8 +1,8 @@
 CC=gcc
 CFLAGS= -c -std=c99
 
-main: main.o lex_analyser.o parser.o stack.o globals.o custom_print.o
-	$(CC) main.o lex_analyser.o parser.o stack.o globals.o custom_print.o -o main
+l10e4: main.o lex_analyser.o parser.o stack.o globals.o custom_print.o
+	$(CC) main.o lex_analyser.o parser.o stack.o globals.o custom_print.o -o l10e4
 
 main.o: main.c
 	$(CC) main.c -o main.o $(CFLAGS)
