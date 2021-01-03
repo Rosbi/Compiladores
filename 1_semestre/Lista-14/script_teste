@@ -1,7 +1,0 @@
-#!/bin/bash
-for VALUE in {1..8}
-do
-    echo "Teste ${VALUE}"
-    ./l14e1 < ./lista_14_input.output/entrada_0${VALUE}.txt > saida0${VALUE}.txt
-    diff ./lista_14_input.output/saida_0${VALUE}.txt saida0${VALUE}.txt
-done
