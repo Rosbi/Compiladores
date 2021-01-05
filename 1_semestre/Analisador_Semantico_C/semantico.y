@@ -2,6 +2,9 @@
 
 #include<stdio.h>
 #include<string.h>
+#include<stdlib.h>
+#include"symbol_table.h"
+#include"hashTable.h"
 extern int yylex();
 extern char* yytext;
 void yyerror(char *s);
@@ -10,10 +13,26 @@ void printLine(FILE* in, int line_number);
 
 extern int colunas;
 extern int linhas;
+extern int id_linha;
+extern int id_coluna;
+int g_tipo = 0;
 FILE* in_file = NULL;
 
-
 %}
+
+/* declare types */
+%union{
+	char* string;
+	int integer;
+	struct symbol* symbol_union;
+	struct array* array_union;
+}
+
+%type <integer> pointer
+%type <string> IDENTIFIER
+%type <symbol_union> declaracao_var1
+%type <array_union> array
+%type <integer> tipo
 
 /* declare tokens */
 %token VOID_T
@@ -105,7 +124,20 @@ declaracoes: NUMBER_SIGN DEFINE IDENTIFIER expressao	{}
 declaracao_var: tipo declaracao_var1 SEMICOLON	{}
 ;
 declaracao_var1: pointer IDENTIFIER array ASSIGN exp_atr declaracao_var_fim	{}
-			   | pointer IDENTIFIER array declaracao_var_fim				{}
+			   | pointer IDENTIFIER array declaracao_var_fim				{
+						Symbol *aux = malloc(sizeof(Symbol));
+
+						aux->symbol_type = TIPOS_VARIAVEL;
+						aux->type.pointers = $1;
+						aux->id = $2;
+						aux->type.type = g_tipo;
+						// aux->var.array = NULL;
+						aux->var.v.constant = false;
+						aux->var.v.line = id_linha;
+						aux->var.v.column = id_coluna;
+
+						insereRegistro(Program_Table.Global_Symbol_Table, aux->id, aux);
+					}
 ;
 declaracao_var_fim: COMMA declaracao_var1	{}
 				  | /* epsilon */			{}
@@ -258,13 +290,13 @@ number: NUM_INT		{}
 	  | NUM_OCTA	{}
 ;
 
-tipo: INT_T		{}
-	| CHAR_T	{}
-	| VOID_T	{}
+tipo: INT_T		{ g_tipo = TIPOS_INT; }
+	| CHAR_T	{ g_tipo = TIPOS_CHAR; }
+	| VOID_T	{ g_tipo = TIPOS_VOID; }
 ;
 
-pointer: ASTERISK pointer	{}
-	   | /* epsilon */		{}
+pointer: ASTERISK pointer	{ $$ = $2 + 1; }
+	   | /* epsilon */		{ $$ = 0; }
 ;
 array: LBRACK expressao RBRACK array	{}
 	 | /* epsilon */					{}
@@ -302,8 +334,29 @@ void yyerror(char *s)
 
 int main(int argc, char **argv)
 {
+	Program_Table.Global_Symbol_Table = criaTabela(211);
+	Symbol *aux = malloc(sizeof(Symbol));
+	aux->symbol_type = TIPOS_VARIAVEL;
+	aux->id = malloc(7 * sizeof(char));
+	strcpy(aux->id, "number");
+	aux->type.type = TIPOS_INT;
+	aux->type.pointers = 0;
+	aux->var.v.array = NULL;
+	aux->var.v.constant = true;
+	aux->var.v.value.i = 15;
+	aux->var.v.line = 5;
+	aux->var.v.column = 15;
+
+	insereRegistro(Program_Table.Global_Symbol_Table, aux->id, aux);
+
 	in_file = stdin;
 	yyparse();
+
+	aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "nuuuum");
+	printSymbol(*aux);
+	aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "a");
+	printSymbol(*aux);
+	hashtableFinalizar(Program_Table.Global_Symbol_Table);
 
     return 0;
 }
