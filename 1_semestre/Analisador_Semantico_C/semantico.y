@@ -3,8 +3,9 @@
 #include<stdio.h>
 #include<string.h>
 #include<stdlib.h>
-#include"symbol_table.h"
+#include"ast_symbols.h"
 #include"hashTable.h"
+#include"commands.h"
 extern int yylex();
 extern char* yytext;
 void yyerror(char *s);
@@ -26,13 +27,19 @@ FILE* in_file = NULL;
 	int integer;
 	struct symbol* symbol_union;
 	struct array* array_union;
+	struct expression* expression_union;
 }
 
-%type <integer> pointer
 %type <string> IDENTIFIER
 %type <symbol_union> declaracao_var1
 %type <array_union> array
+%type <integer> pointer
 %type <integer> tipo
+%type <integer> number
+%type <integer> NUM_INT
+%type <integer> NUM_HEXA
+%type <integer> NUM_OCTA
+%type <expression_union> exp_prim
 
 /* declare tokens */
 %token VOID_T
@@ -123,21 +130,35 @@ declaracoes: NUMBER_SIGN DEFINE IDENTIFIER expressao	{}
 
 declaracao_var: tipo declaracao_var1 SEMICOLON	{}
 ;
-declaracao_var1: pointer IDENTIFIER array ASSIGN exp_atr declaracao_var_fim	{}
-			   | pointer IDENTIFIER array declaracao_var_fim				{
-						Symbol *aux = malloc(sizeof(Symbol));
+declaracao_var1:
+	pointer IDENTIFIER array ASSIGN exp_atr declaracao_var_fim	{
+		Symbol *aux = malloc(sizeof(Symbol));
 
-						aux->symbol_type = TIPOS_VARIAVEL;
-						aux->type.pointers = $1;
-						aux->id = $2;
-						aux->type.type = g_tipo;
-						// aux->var.array = NULL;
-						aux->var.v.constant = false;
-						aux->var.v.line = id_linha;
-						aux->var.v.column = id_coluna;
+		aux->symbol_type = TIPOS_VARIAVEL;
+		aux->type.pointers = $1;
+		aux->id = $2;
+		aux->type.type = g_tipo;
+		aux->var.v.array = $3;
+		aux->var.v.constant = false;
+		aux->var.v.line = id_linha;
+		aux->var.v.column = id_coluna;
 
-						insereRegistro(Program_Table.Global_Symbol_Table, aux->id, aux);
-					}
+		insereRegistro(Program_Table.Global_Symbol_Table, aux->id, aux);
+	}
+	| pointer IDENTIFIER array declaracao_var_fim				{
+		Symbol *aux = malloc(sizeof(Symbol));
+
+		aux->symbol_type = TIPOS_VARIAVEL;
+		aux->type.pointers = $1;
+		aux->id = $2;
+		aux->type.type = g_tipo;
+		aux->var.v.array = $3;
+		aux->var.v.constant = false;
+		aux->var.v.line = id_linha;
+		aux->var.v.column = id_coluna;
+
+		insereRegistro(Program_Table.Global_Symbol_Table, aux->id, aux);
+	}
 ;
 declaracao_var_fim: COMMA declaracao_var1	{}
 				  | /* epsilon */			{}
@@ -278,16 +299,16 @@ exp_postfix1: COMMA exp_atr exp_postfix1	{}
 			| /* epsilon */					{}
 ;
 
-exp_prim: IDENTIFIER	{}
+exp_prim: IDENTIFIER	{ $$ = expressionNew(IDENTIFIER, 0, NULL, NULL); }
 		| number		{}
 		| CHARACTER		{}
 		| STRING		{}
 		| LPAREN expressao RPAREN	{}
 ;
 
-number: NUM_INT		{}
-	  | NUM_HEXA	{}
-	  | NUM_OCTA	{}
+number: NUM_INT		{ $$ = $1; }
+	  | NUM_HEXA	{ $$ = $1; }
+	  | NUM_OCTA	{ $$ = $1; }
 ;
 
 tipo: INT_T		{ g_tipo = TIPOS_INT; }
@@ -298,8 +319,14 @@ tipo: INT_T		{ g_tipo = TIPOS_INT; }
 pointer: ASTERISK pointer	{ $$ = $2 + 1; }
 	   | /* epsilon */		{ $$ = 0; }
 ;
-array: LBRACK expressao RBRACK array	{}
-	 | /* epsilon */					{}
+array: LBRACK expressao RBRACK array	{
+			struct array *aux = malloc(sizeof(struct array));
+			// aux->length = $2; // aux->length = solveConstantExpression($2);
+			aux->next = $4;
+
+			$$ = aux;
+		}
+	 | /* epsilon */					{ $$ = NULL; }
 ;
 
 %%

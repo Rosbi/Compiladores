@@ -1,5 +1,5 @@
-#ifndef SYMBOL_TABLE_H
-#define SYMBOL_TABLE_H
+#ifndef AST_SYMBOLS_H
+#define AST_SYMBOLS_H
 
 #include<stdbool.h>
 // #include<semantico.tab.h>
@@ -14,7 +14,26 @@ enum tipos {
     TIPOS_CHAR,
     TIPOS_VOID,
     TIPOS_VARIAVEL,
-    TIPOS_FUNCAO
+    TIPOS_FUNCAO,
+    COM_IF,
+    COM_WHILE
+    //...
+};
+
+//representação rpn de uma expressão
+typedef struct expression{
+    struct expression *left;
+    struct expression *right;
+    int node_type;
+    float node_value;
+}Expression;
+
+//struct genérica para cada comando
+struct command{
+    int com_type;
+    union{
+        Expression e;
+    } com;
 };
 
 //tipos de variáveis, incluindo ponteiros
@@ -50,6 +69,7 @@ struct function_prototype{
     int column;
 };
 
+//informações de símbolos (variáveis e funções)
 typedef struct symbol{
     int symbol_type;
     char* id;
@@ -60,6 +80,7 @@ typedef struct symbol{
     } var;
 }Symbol;
 
+//definição da função, com sua próŕia tabela de símbolos
 struct function_definition{
     HashTable Local_Symbol_Table;
     char *name;
@@ -67,6 +88,7 @@ struct function_definition{
     struct function_prototype f;
 };
 
+//struct principal do programa
 struct{
     HashTable Global_Symbol_Table;
     struct function_list{

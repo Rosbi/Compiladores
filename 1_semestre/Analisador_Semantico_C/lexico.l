@@ -98,8 +98,8 @@ int charFrequency(const char *str, char ch, int* col){
 "exit"		{ colunas+=4; return EXIT_T; }
 
 	/* variables */
-"0"("x"|"X")([0-9]|[A-F]|[a-f])+	{ colunas+=strlen(yytext); return NUM_HEXA; }
-"0"[0-9]+							{ colunas+=strlen(yytext); return NUM_OCTA; }
+"0"("x"|"X")([0-9]|[A-F]|[a-f])+	{ colunas+=strlen(yytext); char* p; yylval.integer=strtol(yytext, &p, 16); return NUM_HEXA; }
+"0"[0-9]+							{ colunas+=strlen(yytext); char* p; yylval.integer=strtol(yytext, &p,  8); return NUM_OCTA; }
 [0-9]+								{ colunas+=strlen(yytext); yylval.integer=atoi(yytext); return NUM_INT; }
 "\'""\\"?."\'"						{ colunas+=strlen(yytext); yylval.string=yytext; return CHARACTER; }
 \"(\\.|[^"\\])*\"					{ colunas+=strlen(yytext); yylval.string=yytext; return STRING; }

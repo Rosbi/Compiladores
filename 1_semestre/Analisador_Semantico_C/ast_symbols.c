@@ -1,4 +1,4 @@
-#include"symbol_table.h"
+#include"ast_symbols.h"
 #include<stdio.h>
 
 void printSymbol(Symbol s){
@@ -13,7 +13,15 @@ void printSymbol(Symbol s){
                 { printf("*"); }
             printf("\n Constante: %s\n", s.var.v.constant ? "SIM" : "NAO");
             printf(" Valor: %d\n", s.var.v.value.i);
-            // printf(" Array: \"%s\":\n", s.id);
+            if(s.var.v.array){
+                printf(" Array: ");
+                struct array *aux = s.var.v.array;
+                while(aux){
+                    printf("[%d]", aux->length);
+                    aux = aux->next;
+                }
+                printf("\n");
+            }
             printf(" Linha: %d\n", s.var.v.line);
             printf(" Coluna: %d\n\n", s.var.v.column);
             break;
