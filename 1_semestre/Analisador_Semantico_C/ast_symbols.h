@@ -9,12 +9,14 @@
 // char;
 // void;
 
+typedef struct symbol Symbol;
+
 enum tipos {
     TIPOS_INT,
     TIPOS_CHAR,
     TIPOS_VOID,
-    TIPOS_VARIAVEL,
-    TIPOS_FUNCAO,
+    DECLARACAO_VARIAVEL,
+    DECLARACAO_FUNCAO,
     COM_IF,
     COM_WHILE
     //...
@@ -25,7 +27,15 @@ typedef struct expression{
     struct expression *left;
     struct expression *right;
     int node_type;
-    float node_value;
+    union expression_union{
+        int num;
+        char chr;
+        char *str;
+        Symbol *sym;
+    } node_value;
+
+    int line;
+    int column;
 }Expression;
 
 //struct genérica para cada comando
@@ -53,9 +63,6 @@ struct variable{
         int i;
         char c;
     }value;
-
-    int line;
-    int column;
 };
 
 //possíveis informações de uma função
@@ -64,21 +71,21 @@ struct function_prototype{
         struct variable param;
         struct parameters *next;
     } *parameters;
+};
+
+//informações de símbolos (variáveis e funções)
+struct symbol{
+    int symbol_type;
+    char* id;
+    struct var_type type;
+    union symbol_union{
+        struct variable v;
+        struct function_prototype f;
+    } var;
 
     int line;
     int column;
 };
-
-//informações de símbolos (variáveis e funções)
-typedef struct symbol{
-    int symbol_type;
-    char* id;
-    struct var_type type;
-    union{
-        struct variable v;
-        struct function_prototype f;
-    } var;
-}Symbol;
 
 //definição da função, com sua próŕia tabela de símbolos
 struct function_definition{
@@ -98,5 +105,6 @@ struct{
 } Program_Table;
 
 void printSymbol(Symbol);
+Symbol* symbolNew(int symbol_type, char *id, struct var_type t, union symbol_union su, int line, int column);
 
 #endif
