@@ -2,14 +2,15 @@
 #include<stdio.h>
 #include<math.h>
 #include"commands.h"
-#include"semantico.tab.h"
 
-Expression* expressionNew(int node_t, int node_v, Expression *left, Expression *right){
+Expression* expressionNew(int node_t, union expression_union value, Expression *left, Expression *right, int line, int column){
     Expression *aux = malloc(sizeof(Expression));
     aux->left = left;
     aux->right = right;
     aux->node_type = node_t;
-    aux->node_value = node_v;
+    aux->node_value = value;
+    aux->line = line;
+    aux->column = column;
     return aux;
 }
 
