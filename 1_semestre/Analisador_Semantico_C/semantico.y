@@ -10,12 +10,19 @@ extern int yylex();
 extern char* yytext;
 void yyerror(char *s);
 
+enum error_list {
+	UNDECLARED_SYMBOL,
+	REDEFINED_SYMBOL,
+	REDECLARED_SYMBOL
+};
+
 void printLine(FILE* in, int line_number);
+void semanticError(enum error_list erro, void* element);
+int identifierInsert(HashTable symbol_table, Symbol* s);
+Symbol* identifierLookup(HashTable symbol_table, Symbol *s);
 
 extern int colunas;
 extern int linhas;
-extern int id_linha;
-extern int id_coluna;
 int g_tipo = 0;
 FILE* in_file = NULL;
 
@@ -25,20 +32,40 @@ FILE* in_file = NULL;
 %union{
 	char* string;
 	int integer;
+	char charac;
 	struct symbol* symbol_union;
 	struct array* array_union;
 	struct expression* expression_union;
 }
 
+%type <string> STRING
 %type <string> IDENTIFIER
-%type <symbol_union> declaracao_var1
-%type <array_union> array
 %type <integer> pointer
 %type <integer> tipo
 %type <integer> number
 %type <integer> NUM_INT
 %type <integer> NUM_HEXA
 %type <integer> NUM_OCTA
+%type <charac> CHARACTER
+%type <symbol_union> declaracao_var1
+%type <array_union> array
+%type <expression_union> expressao
+%type <expression_union> exp_atr
+%type <expression_union> exp_cond
+%type <expression_union> exp_log_or
+%type <expression_union> exp_log_and
+%type <expression_union> exp_or
+%type <expression_union> exp_xor
+%type <expression_union> exp_and
+%type <expression_union> exp_equal
+%type <expression_union> exp_relat
+%type <expression_union> exp_shift
+%type <expression_union> exp_add
+%type <expression_union> exp_mult
+%type <expression_union> exp_cast
+%type <expression_union> exp_unary
+%type <expression_union> exp_postfix
+%type <expression_union> exp_postfix1
 %type <expression_union> exp_prim
 
 /* declare tokens */
@@ -116,8 +143,8 @@ FILE* in_file = NULL;
 
 %%
 
-programa: programa1 programa END_OF_FILE	{ printf("SUCCESSFUL COMPILATION."); return 0; }
-		| programa1 END_OF_FILE				{ printf("SUCCESSFUL COMPILATION."); return 0; }
+programa: programa1 programa END_OF_FILE	{ printf("SUCCESSFUL COMPILATION."); YYACCEPT; }
+		| programa1 END_OF_FILE				{ printf("SUCCESSFUL COMPILATION."); YYACCEPT; }
 ;
 programa1: declaracoes	{}
 		 | funcao		{}
@@ -134,30 +161,30 @@ declaracao_var1:
 	pointer IDENTIFIER array ASSIGN exp_atr declaracao_var_fim	{
 		Symbol *aux = malloc(sizeof(Symbol));
 
-		aux->symbol_type = TIPOS_VARIAVEL;
+		aux->symbol_type = DECLARACAO_VARIAVEL;
 		aux->type.pointers = $1;
 		aux->id = $2;
 		aux->type.type = g_tipo;
 		aux->var.v.array = $3;
 		aux->var.v.constant = false;
-		aux->var.v.line = id_linha;
-		aux->var.v.column = id_coluna;
+		aux->line = @2.first_line;
+		aux->column = @2.first_column;
 
-		insereRegistro(Program_Table.Global_Symbol_Table, aux->id, aux);
+		if(!identifierInsert(Program_Table.Global_Symbol_Table, aux)){ YYABORT; };
 	}
 	| pointer IDENTIFIER array declaracao_var_fim				{
 		Symbol *aux = malloc(sizeof(Symbol));
 
-		aux->symbol_type = TIPOS_VARIAVEL;
+		aux->symbol_type = DECLARACAO_VARIAVEL;
 		aux->type.pointers = $1;
 		aux->id = $2;
 		aux->type.type = g_tipo;
 		aux->var.v.array = $3;
 		aux->var.v.constant = false;
-		aux->var.v.line = id_linha;
-		aux->var.v.column = id_coluna;
+		aux->line = @2.first_line;
+		aux->column = @2.first_column;
 
-		insereRegistro(Program_Table.Global_Symbol_Table, aux->id, aux);
+		if(!identifierInsert(Program_Table.Global_Symbol_Table, aux)){ YYABORT; };
 	}
 ;
 declaracao_var_fim: COMMA declaracao_var1	{}
@@ -211,73 +238,73 @@ opt_exp: expressao		{}
 	   | /* epsilon */	{}
 ;
 
-expressao: exp_atr					{}
+expressao: exp_atr					{ $$ = $1; }
 		 | exp_atr COMMA expressao	{}
 ;
 
-exp_atr: exp_cond						{}
+exp_atr: exp_cond						{ $$ = $1; }
 	   | exp_unary ASSIGN exp_atr		{}
 	   | exp_unary ADD_ASSIGN exp_atr	{}
 	   | exp_unary SUB_ASSIGN exp_atr	{}
 ;
 
-exp_cond: exp_log_or										{}
+exp_cond: exp_log_or										{ $$ = $1; }
 		| exp_log_or QUEST_MARK expressao COLON exp_cond	{}
 ;
 
-exp_log_or: exp_log_and						{}
+exp_log_or: exp_log_and						{ $$ = $1; }
 		  | exp_log_and LOG_OR exp_log_or	{}
 ;
 
-exp_log_and: exp_or						{}
+exp_log_and: exp_or						{ $$ = $1; }
 		   | exp_or LOG_AND exp_log_and	{}
 ;
 
-exp_or: exp_xor					{}
+exp_or: exp_xor					{ $$ = $1; }
 	  | exp_xor BIT_OR exp_or	{}
 ;
 
-exp_xor: exp_and					{}
+exp_xor: exp_and					{ $$ = $1; }
 	   | exp_and BIT_XOR exp_xor	{}
 ;
 
-exp_and: exp_equal					{}
+exp_and: exp_equal					{ $$ = $1; }
 	   | exp_equal AMPERSAND exp_and	{}
 ;
 
-exp_equal: exp_relat						{}
+exp_equal: exp_relat						{ $$ = $1; }
 		 | exp_relat EQUALS exp_equal		{}
 		 | exp_relat NOT_EQUALS exp_equal	{}
 ;
 
-exp_relat: exp_shift					{}
+exp_relat: exp_shift					{ $$ = $1; }
 		 | exp_shift LESS exp_relat		{}
 		 | exp_shift LEQ exp_relat		{}
 		 | exp_shift GEQ exp_relat		{}
 		 | exp_shift GREAT exp_relat	{}
 ;
 
-exp_shift: exp_add					{}
+exp_shift: exp_add					{ $$ = $1; }
 		 | exp_add LSHIFT exp_shift	{}
 		 | exp_add RSHIFT exp_shift	{}
 ;
 
-exp_add: exp_mult				{}
+exp_add: exp_mult				{ $$ = $1; }
 	   | exp_mult ADD exp_add	{}
 	   | exp_mult SUB exp_add	{}
 ;
 
-exp_mult: exp_cast						{}
+exp_mult: exp_cast						{ $$ = $1; }
 		| exp_cast ASTERISK exp_mult	{}
 		| exp_cast DIV exp_mult			{}
 		| exp_cast MOD exp_mult			{}
 ;
 
-exp_cast: exp_unary								{}
+exp_cast: exp_unary								{ $$ = $1; }
 		| LPAREN tipo pointer RPAREN exp_cast	{}
 ;
 
-exp_unary: exp_postfix			{}
+exp_unary: exp_postfix			{ $$ = $1; }
 		 | INC exp_unary		{}
 		 | DEC exp_unary		{}
 		 | AMPERSAND exp_cast	{}
@@ -288,7 +315,7 @@ exp_unary: exp_postfix			{}
 		 | LOG_NOT exp_cast		{}
 ;
 
-exp_postfix: exp_prim				{}
+exp_postfix: exp_prim				{ $$ = $1; }
 		   | exp_postfix INC		{}
 		   | exp_postfix DEC		{}
 		   | exp_postfix LBRACK expressao RBRACK			{}
@@ -299,11 +326,28 @@ exp_postfix1: COMMA exp_atr exp_postfix1	{}
 			| /* epsilon */					{}
 ;
 
-exp_prim: IDENTIFIER	{ $$ = expressionNew(IDENTIFIER, 0, NULL, NULL); }
-		| number		{}
-		| CHARACTER		{}
-		| STRING		{}
-		| LPAREN expressao RPAREN	{}
+exp_prim: IDENTIFIER	{
+			struct var_type t;
+			union symbol_union u;
+			Symbol *s = symbolNew(DECLARACAO_VARIAVEL, $1, t, u, @1.first_line, @1.first_column);
+			s = identifierLookup(Program_Table.Global_Symbol_Table, s);
+			if(!s){ YYABORT; }
+			union expression_union exp = { .sym = s };
+			$$ = expressionNew(IDENTIFIER, exp, NULL, NULL, @1.first_line, @1.first_line);
+		}
+		| number		{
+			union expression_union exp = { .num = $1 };
+			$$ = expressionNew(NUM_INT, exp, NULL, NULL, @1.first_line, @1.first_line);
+		}
+		| CHARACTER		{
+			union expression_union exp = { .chr = $1 };
+			$$ = expressionNew(CHARACTER, exp, NULL, NULL, @1.first_line, @1.first_line);
+		}
+		| STRING		{
+			union expression_union exp = { .str = $1 };
+			$$ = expressionNew(STRING, exp, NULL, NULL, @1.first_line, @1.first_line);
+		}
+		| LPAREN expressao RPAREN	{ $$ = $2; }
 ;
 
 number: NUM_INT		{ $$ = $1; }
@@ -321,6 +365,7 @@ pointer: ASTERISK pointer	{ $$ = $2 + 1; }
 ;
 array: LBRACK expressao RBRACK array	{
 			struct array *aux = malloc(sizeof(struct array));
+			aux->length = $2->node_value.num;
 			// aux->length = $2; // aux->length = solveConstantExpression($2);
 			aux->next = $4;
 
@@ -331,8 +376,7 @@ array: LBRACK expressao RBRACK array	{
 
 %%
 
-void yyerror(char *s)
-{
+void yyerror(char *s){
 	switch(yychar){
 		case UNTERMINATED_COMMENT:
 			printf("error:lexical:%d:%d: unterminated comment", linhas, colunas);
@@ -359,33 +403,90 @@ void yyerror(char *s)
 	}
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv){
 	Program_Table.Global_Symbol_Table = criaTabela(211);
-	Symbol *aux = malloc(sizeof(Symbol));
-	aux->symbol_type = TIPOS_VARIAVEL;
-	aux->id = malloc(7 * sizeof(char));
-	strcpy(aux->id, "number");
-	aux->type.type = TIPOS_INT;
-	aux->type.pointers = 0;
-	aux->var.v.array = NULL;
-	aux->var.v.constant = true;
-	aux->var.v.value.i = 15;
-	aux->var.v.line = 5;
-	aux->var.v.column = 15;
-
-	insereRegistro(Program_Table.Global_Symbol_Table, aux->id, aux);
 
 	in_file = stdin;
 	yyparse();
 
-	aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "nuuuum");
-	printSymbol(*aux);
-	aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "a");
-	printSymbol(*aux);
+	// Symbol *aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "nuuuum");
+	// printSymbol(*aux);
+	// aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "abcd");
+	// printSymbol(*aux);
+	// aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "acdb");
+	// printSymbol(*aux);
+
 	hashtableFinalizar(Program_Table.Global_Symbol_Table);
 
     return 0;
+}
+
+int identifierInsert(HashTable symbol_table, Symbol* s){
+	Symbol *aux = getPrimeiroRegistro(symbol_table, s->id);
+	if(!aux){
+		insereRegistro(symbol_table, s->id, s);
+	}else{
+		if(aux->type.type == s->type.pointers && aux->type.pointers){
+			semanticError(REDECLARED_SYMBOL, s);
+		}else{
+			semanticError(REDEFINED_SYMBOL, s);
+		}
+		return 0;
+	}
+
+	return 1;
+}
+Symbol* identifierLookup(HashTable symbol_table, Symbol *s){
+	Symbol *aux = NULL;
+	if(symbol_table){
+		aux = getPrimeiroRegistro(symbol_table, s->id);
+	}
+	if(!aux){
+		aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, s->id);
+		if(!aux){
+			semanticError(UNDECLARED_SYMBOL, s);
+		}
+	}
+
+	return aux;
+}
+
+void semanticError(enum error_list erro, void* element){
+	char error_msg[150];
+
+	switch(erro){
+		case UNDECLARED_SYMBOL:
+		{
+			Symbol *s = element;
+			colunas = s->column;
+			sprintf(error_msg, "'%s' undeclared", s->id);
+			break;
+		}
+		case REDECLARED_SYMBOL:
+		{
+			Symbol *s = element;
+			colunas = s->column;
+			Symbol *aux = identifierLookup(Program_Table.Global_Symbol_Table, s);
+			sprintf(error_msg, "variable '%s' already declared, previous declaration in line %d column %d", s->id, aux->line, aux->column);
+			break;
+		}
+		case  REDEFINED_SYMBOL:
+		{
+			Symbol *s = element;
+			colunas = s->column;
+			Symbol *aux = identifierLookup(Program_Table.Global_Symbol_Table, s);
+			sprintf(error_msg, "redefinition of '%s' previous defined in line %d column %d", s->id, aux->line, aux->column);
+			break;
+		}
+	}
+
+	printf("error:semantic:%d:%d: ", linhas, colunas);
+	printf("%s\n", error_msg);
+
+	printLine(in_file, linhas);
+	for(int i=1;i<colunas;i++)
+		{ printf(" "); }
+	printf("^");
 }
 
 void printLine(FILE* in, int n){
