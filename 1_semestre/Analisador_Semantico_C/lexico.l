@@ -3,12 +3,23 @@
 
 %{
 
+#define YY_USER_ACTION \
+    yylloc.first_line = yylloc.last_line; \
+    yylloc.first_column = yylloc.last_column; \
+    for(int i = 0; yytext[i] != '\0'; i++) { \
+        if(yytext[i] == '\n') { \
+            yylloc.last_line++; \
+            yylloc.last_column = 1; \
+        } \
+        else { \
+            yylloc.last_column++; \
+        } \
+    }
+
 #include<semantico.tab.h>
 #include<string.h>
 int colunas   = 1;
 int linhas    = 1;
-int id_linha  = 0;
-int id_coluna = 0;
 
 int charFrequency(const char *str, char ch, int* col){
 	int count=0;
@@ -103,7 +114,12 @@ int charFrequency(const char *str, char ch, int* col){
 [0-9]+								{ colunas+=strlen(yytext); yylval.integer=atoi(yytext); return NUM_INT; }
 "\'""\\"?."\'"						{ colunas+=strlen(yytext); yylval.string=yytext; return CHARACTER; }
 \"(\\.|[^"\\])*\"					{ colunas+=strlen(yytext); yylval.string=yytext; return STRING; }
-[_a-zA-Z][_a-zA-Z0-9]*	{ id_linha=linhas; id_coluna=colunas; colunas+=strlen(yytext); yylval.string=malloc(strlen(yytext)+1); strcpy(yylval.string,yytext); return IDENTIFIER; }
+[_a-zA-Z][_a-zA-Z0-9]*				{
+										colunas+=strlen(yytext);
+										yylval.string=malloc(strlen(yytext)+1);
+										strcpy(yylval.string,yytext);
+										return IDENTIFIER;
+									}
 
 	/* comments */
 "//".*[\n]		{ linhas++; colunas=1; }
