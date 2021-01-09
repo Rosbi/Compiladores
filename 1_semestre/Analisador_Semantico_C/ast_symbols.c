@@ -10,6 +10,7 @@ void printSymbol(Symbol s){
             switch(s.type.type){
                 case TIPOS_INT:  printf(" Tipo: int");  break;
                 case TIPOS_CHAR: printf(" Tipo: char"); break;
+                case TIPOS_VOID: printf(" Tipo: void"); break;
             }
             for(int i=0;i<s.type.pointers;i++)
                 { printf("*"); }

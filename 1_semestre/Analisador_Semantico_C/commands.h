@@ -7,7 +7,7 @@
 Expression* expressionNew(int node_t, union expression_union value, Expression* left, Expression* right, int line, int columns);
 
 void RpnWalk(Expression*);
-int constExprSolve(Expression *root);
+int evaluateConstExpr(Expression *root);
 
 void deleteTree(Expression*);
 

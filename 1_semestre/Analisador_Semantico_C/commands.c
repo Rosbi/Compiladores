@@ -21,91 +21,270 @@ void RpnWalk(Expression *root){
     RpnWalk(root->left);
     RpnWalk(root->right);
     switch(root->node_type){
-        case ADD:  
+        // expressão atribuição
+        case ASSIGN:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case ADD_ASSIGN:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case SUB_ASSIGN:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão condicional (_ ? _ : _)
+
+        // expressão or
+        case BIT_OR:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão or lógico
+        case LOG_OR:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão and lógico
+        case LOG_AND:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão xor
+        case BIT_XOR:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão and
+        case BIT_AND:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        // expressão igualdade
+        case EQUALS:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case NOT_EQUALS:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão relacional
+        case LESS:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case LEQ:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case GEQ:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case GREAT:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão shift
+        case RSHIFT:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case LSHIFT:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão aditiva
+        case ADD:
             printf("+ ");
             break;
-        case SUB:  
+        case SUB:
             printf("- ");
             break;
-        // case MUL:  
-        //     printf("* ");
-        //     break;
-        // case DIV:  
-        //     printf("/ ");
-        //     break;
-        // case POW:  
-        //     printf("^ ");
-        //     break;
-        // case MOD:  
-        //     printf("%c ", '%');
-        //     break;
-        // case SEN:  
-        //     printf("SEN ");
-        //     break;
-        // case COS:  
-        //     printf("COS ");
-        //     break;
-        // case TAN:  
-        //     printf("TAN ");
-        //     break;
-        // case ABS:  
-        //     printf("ABS ");
-        //     break;
-        // case NUM:
-        // case REAL: 
-        //     printf("%f ", node->node_value);
-        //     break;
-        // case VAR:  
-        //     printf("x ");
-        //     break;
+
+        // expressão multiplicativa
+        case MUL:
+            printf("* ");
+            break;
+        case DIV:
+            printf("/ ");
+            break;
+        case MOD:
+            printf("%c ", '%');
+            break;
+
+        // expressão unária
+        case ADDRESS:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case POINTER_DEFERENCE:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case UNR_PLUS:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case UNR_MINUS:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case BIT_NOT:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case LOG_NOT:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão pósfixa E unária
+        case INC:
+            printf("1 + ");
+            break;
+        case DEC:
+            printf("1 - ");
+            break;
+
+
+        // expressão primária
+        case NUM_INT:
+            printf("%d ", root->node_value.num);
+            break;
+        case STRING:
+            printf("\"%s\" ", root->node_value.str);
+            break;
+        case CHARACTER:
+            printf("'%c' ", root->node_value.chr);
+            break;
+        case IDENTIFIER:
+            printf("%s ", root->node_value.sym->id);
+            break;
     }
 }
 
-int constExprSolve(Expression *root){
-    int no_l, no_r;
-    int result = 0.0;
-    no_l = constExprSolve(root->left);
-    no_r = constExprSolve(root->right);
+int evaluateConstExpr(Expression *root){
+    int result = 0;
+    int no_l = evaluateConstExpr(root->left);
+    int no_r = evaluateConstExpr(root->right);
     switch(root->node_type){
-        case ADD:  
+        // expressão atribuição
+        case ASSIGN:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case ADD_ASSIGN:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case SUB_ASSIGN:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão condicional (_ ? _ : _)
+
+        // expressão or
+        case BIT_OR:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão or lógico
+        case LOG_OR:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão and lógico
+        case LOG_AND:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão xor
+        case BIT_XOR:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão and
+        case BIT_AND:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        // expressão igualdade
+        case EQUALS:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case NOT_EQUALS:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão relacional
+        case LESS:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case LEQ:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case GEQ:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case GREAT:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão shift
+        case RSHIFT:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case LSHIFT:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão aditiva
+        case ADD:
             result = no_l + no_r;
             break;
-        case SUB:  
+        case SUB:
             result = no_l - no_r;
             break;
-        // case MUL:  
-        //     result = no_l * no_r;
-        //     break;
-        // case DIV:  
-        //     result = no_l / no_r;
-        //     break;
-        // case POW:  
-        //     result = powf(no_l, no_r);
-        //     break;
-        // case MOD:  
-        //     result = (int)no_l % (int)no_r;
-        //     break;
-        // case SEN:  
-        //     result = sinf(no_l);
-        //     break;
-        // case COS:  
-        //     result = cosf(no_l);
-        //     break;
-        // case TAN:  
-        //     result = tanf(no_l);
-        //     break;
-        // case ABS:  
-        //     result = fabsf(no_l);
-        //     break;
-        // case NUM:  
-        //     result = node->node_value;
-        //     break;
-        // case REAL: 
-        //     result = node->node_value;
-        //     break;
-        // case VAR:  
-        //     result = x;
-        //     break;
+
+        // expressão multiplicativa
+        case MUL:
+            result = no_l * no_r;
+            break;
+        case DIV:
+            result = no_l  / no_r;
+            break;
+        case MOD:
+            result = no_l % no_r;
+            break;
+
+        // expressão unária
+        case ADDRESS:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case POINTER_DEFERENCE:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case UNR_PLUS:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case UNR_MINUS:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case BIT_NOT:
+            printf("%s ", root->node_value.sym->id);
+            break;
+        case LOG_NOT:
+            printf("%s ", root->node_value.sym->id);
+            break;
+
+        // expressão pósfixa E unária
+        case INC:
+            printf("1 + ");
+            break;
+        case DEC:
+            printf("1 - ");
+            break;
+
+
+        // expressão primária
+        case NUM_INT:
+            printf("%d ", root->node_value.num);
+            break;
+        case STRING:
+            printf("\"%s\" ", root->node_value.str);
+            break;
+        case CHARACTER:
+            printf("'%c' ", root->node_value.chr);
+            break;
+        case IDENTIFIER:
+            printf("%s ", root->node_value.sym->id);
+            break;
     }
     return result;
 }

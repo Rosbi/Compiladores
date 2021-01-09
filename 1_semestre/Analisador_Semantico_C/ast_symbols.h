@@ -4,10 +4,6 @@
 #include<stdbool.h>
 // #include<semantico.tab.h>
 #include"hashTable.h"
-//tipos
-// int;
-// char;
-// void;
 
 typedef struct symbol Symbol;
 
