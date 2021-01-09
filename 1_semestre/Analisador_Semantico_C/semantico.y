@@ -13,7 +13,8 @@ void yyerror(char *s);
 enum error_list {
 	UNDECLARED_SYMBOL,
 	REDEFINED_SYMBOL,
-	REDECLARED_SYMBOL
+	REDECLARED_SYMBOL,
+	VARIABLE_DECLARED_VOID
 };
 
 void printLine(FILE* in, int line_number);
@@ -25,6 +26,7 @@ extern int colunas;
 extern int linhas;
 int g_tipo = 0;
 FILE* in_file = NULL;
+HashTable Current_Symbol_Table = NULL;
 
 %}
 
@@ -130,6 +132,14 @@ FILE* in_file = NULL;
 %token UNKNOWN_CHAR
 %token END_OF_FILE
 
+	/* additional tokens */
+%token ADDRESS
+%token MUL
+%token BIT_AND
+%token POINTER_DEFERENCE
+%token UNR_PLUS
+%token UNR_MINUS
+
 	/* unused tokens */
 %token BREAK_T
 %token SWITCH_T
@@ -137,7 +147,6 @@ FILE* in_file = NULL;
 %token DEFAULT_T
 %token TYPEDEF_T
 %token STRUCT_T
-%token POINTER_DEFERENCE
 
 %start programa
 
@@ -150,7 +159,22 @@ programa1: declaracoes	{}
 		 | funcao		{}
 ;
 
-declaracoes: NUMBER_SIGN DEFINE IDENTIFIER expressao	{}
+declaracoes: NUMBER_SIGN DEFINE IDENTIFIER expressao	{
+			   struct var_type t = { NUM_INT, 0 };
+			   struct variable v = { NULL, true};
+			   union symbol_union u = { .v = v };
+			   Symbol *aux = symbolNew(DECLARACAO_VARIAVEL, $3, t, u, @3.first_line, @3.first_column);
+
+			   int *value = malloc(sizeof(int));
+			   *value = evaluateConstExpr($4);
+			   if(!value){
+				//    semanticError()
+				   YYABORT;
+			   }else{
+				   aux->var.v.value.i = *value;
+				   if(!identifierInsert(Current_Symbol_Table, aux)){ YYABORT; };
+			   }
+		   }
 		   | declaracao_var		{}
 		   | declaracao_prot	{}
 ;
@@ -159,32 +183,30 @@ declaracao_var: tipo declaracao_var1 SEMICOLON	{}
 ;
 declaracao_var1:
 	pointer IDENTIFIER array ASSIGN exp_atr declaracao_var_fim	{
-		Symbol *aux = malloc(sizeof(Symbol));
+		Symbol *aux;
+		struct var_type t = { g_tipo, $1 };
+		struct variable v = { $3, false };
+		union symbol_union u = { .v = v };
+		aux = symbolNew(DECLARACAO_VARIAVEL, $2, t, u, @2.first_line, @2.first_column);
 
-		aux->symbol_type = DECLARACAO_VARIAVEL;
-		aux->type.pointers = $1;
-		aux->id = $2;
-		aux->type.type = g_tipo;
-		aux->var.v.array = $3;
-		aux->var.v.constant = false;
-		aux->line = @2.first_line;
-		aux->column = @2.first_column;
-
-		if(!identifierInsert(Program_Table.Global_Symbol_Table, aux)){ YYABORT; };
+		if(g_tipo == TIPOS_VOID && aux->type.pointers == 0){
+			semanticError(VARIABLE_DECLARED_VOID, aux);
+			YYABORT;
+		}
+		if(!identifierInsert(Current_Symbol_Table, aux)){ YYABORT; };
 	}
 	| pointer IDENTIFIER array declaracao_var_fim				{
-		Symbol *aux = malloc(sizeof(Symbol));
+		Symbol *aux;
+		struct var_type t = { g_tipo, $1 };
+		struct variable v = { $3, false };
+		union symbol_union u = { .v = v };
+		aux = symbolNew(DECLARACAO_VARIAVEL, $2, t, u, @2.first_line, @2.first_column);
 
-		aux->symbol_type = DECLARACAO_VARIAVEL;
-		aux->type.pointers = $1;
-		aux->id = $2;
-		aux->type.type = g_tipo;
-		aux->var.v.array = $3;
-		aux->var.v.constant = false;
-		aux->line = @2.first_line;
-		aux->column = @2.first_column;
-
-		if(!identifierInsert(Program_Table.Global_Symbol_Table, aux)){ YYABORT; };
+		if(g_tipo == TIPOS_VOID && aux->type.pointers == 0){
+			semanticError(VARIABLE_DECLARED_VOID, aux);
+			YYABORT;
+		}
+		if(!identifierInsert(Current_Symbol_Table, aux)){ YYABORT; };
 	}
 ;
 declaracao_var_fim: COMMA declaracao_var1	{}
@@ -239,13 +261,23 @@ opt_exp: expressao		{}
 ;
 
 expressao: exp_atr					{ $$ = $1; }
-		 | exp_atr COMMA expressao	{}
+		 | expressao COMMA exp_atr	{ $$ = $3; }
 ;
 
+
 exp_atr: exp_cond						{ $$ = $1; }
-	   | exp_unary ASSIGN exp_atr		{}
-	   | exp_unary ADD_ASSIGN exp_atr	{}
-	   | exp_unary SUB_ASSIGN exp_atr	{}
+	   | exp_unary ASSIGN exp_atr		{
+		   union expression_union u;
+		   $$ = expressionNew(ASSIGN, u, $1, $3, @2.first_line, @2.first_column);
+	   }
+	   | exp_unary ADD_ASSIGN exp_atr	{
+		   union expression_union u;
+		   $$ = expressionNew(ADD_ASSIGN, u, $1, $3, @2.first_line, @2.first_column);
+	   }
+	   | exp_unary SUB_ASSIGN exp_atr	{
+		   union expression_union u;
+		   $$ = expressionNew(SUB_ASSIGN, u, $1, $3, @2.first_line, @2.first_column);
+	   }
 ;
 
 exp_cond: exp_log_or										{ $$ = $1; }
@@ -253,51 +285,105 @@ exp_cond: exp_log_or										{ $$ = $1; }
 ;
 
 exp_log_or: exp_log_and						{ $$ = $1; }
-		  | exp_log_and LOG_OR exp_log_or	{}
+		  | exp_log_and LOG_OR exp_log_or	{
+			union expression_union u;
+			$$ = expressionNew(LOG_OR, u, $1, $3, @2.first_line, @2.first_column);
+		  }
 ;
 
 exp_log_and: exp_or						{ $$ = $1; }
-		   | exp_or LOG_AND exp_log_and	{}
+		   | exp_or LOG_AND exp_log_and	{
+				union expression_union u;
+				$$ = expressionNew(LOG_AND, u, $1, $3, @2.first_line, @2.first_column);
+		   }
 ;
 
 exp_or: exp_xor					{ $$ = $1; }
-	  | exp_xor BIT_OR exp_or	{}
+	  | exp_xor BIT_OR exp_or	{
+		   union expression_union u;
+		   $$ = expressionNew(BIT_OR, u, $1, $3, @2.first_line, @2.first_column);
+	  }
 ;
 
 exp_xor: exp_and					{ $$ = $1; }
-	   | exp_and BIT_XOR exp_xor	{}
+	   | exp_and BIT_XOR exp_xor	{
+		   union expression_union u;
+		   $$ = expressionNew(BIT_XOR, u, $1, $3, @2.first_line, @2.first_column);
+	   }
 ;
 
 exp_and: exp_equal					{ $$ = $1; }
-	   | exp_equal AMPERSAND exp_and	{}
+	   | exp_equal AMPERSAND exp_and	{
+		   union expression_union u;
+		   $$ = expressionNew(BIT_AND, u, $1, $3, @2.first_line, @2.first_column);
+	   }
 ;
 
 exp_equal: exp_relat						{ $$ = $1; }
-		 | exp_relat EQUALS exp_equal		{}
-		 | exp_relat NOT_EQUALS exp_equal	{}
+		 | exp_relat EQUALS exp_equal		{
+			union expression_union u;
+			$$ = expressionNew(EQUALS, u, $1, $3, @2.first_line, @2.first_column);
+		 }
+		 | exp_relat NOT_EQUALS exp_equal	{
+			union expression_union u;
+			$$ = expressionNew(NOT_EQUALS, u, $1, $3, @2.first_line, @2.first_column);
+		 }
 ;
 
 exp_relat: exp_shift					{ $$ = $1; }
-		 | exp_shift LESS exp_relat		{}
-		 | exp_shift LEQ exp_relat		{}
-		 | exp_shift GEQ exp_relat		{}
-		 | exp_shift GREAT exp_relat	{}
+		 | exp_shift LESS exp_relat		{
+		   union expression_union u;
+		   $$ = expressionNew(LESS, u, $1, $3, @2.first_line, @2.first_column);
+		 }
+		 | exp_shift LEQ exp_relat		{
+		   union expression_union u;
+		   $$ = expressionNew(LEQ, u, $1, $3, @2.first_line, @2.first_column);
+		 }
+		 | exp_shift GEQ exp_relat		{
+		   union expression_union u;
+		   $$ = expressionNew(GEQ, u, $1, $3, @2.first_line, @2.first_column);
+		 }
+		 | exp_shift GREAT exp_relat	{
+		   union expression_union u;
+		   $$ = expressionNew(GREAT, u, $1, $3, @2.first_line, @2.first_column);
+		 }
 ;
 
 exp_shift: exp_add					{ $$ = $1; }
-		 | exp_add LSHIFT exp_shift	{}
-		 | exp_add RSHIFT exp_shift	{}
+		 | exp_add LSHIFT exp_shift	{
+			union expression_union u;
+			$$ = expressionNew(LSHIFT, u, $1, $3, @2.first_line, @2.first_column);
+		 }
+		 | exp_add RSHIFT exp_shift	{
+			union expression_union u;
+			$$ = expressionNew(RSHIFT, u, $1, $3, @2.first_line, @2.first_column);
+		 }
 ;
 
 exp_add: exp_mult				{ $$ = $1; }
-	   | exp_mult ADD exp_add	{}
-	   | exp_mult SUB exp_add	{}
+	   | exp_mult ADD exp_add	{
+			union expression_union u;
+			$$ = expressionNew(ADD, u, $1, $3, @2.first_line, @2.first_column);
+	   }
+	   | exp_mult SUB exp_add	{
+			union expression_union u;
+			$$ = expressionNew(SUB, u, $1, $3, @2.first_line, @2.first_column);
+	   }
 ;
 
 exp_mult: exp_cast						{ $$ = $1; }
-		| exp_cast ASTERISK exp_mult	{}
-		| exp_cast DIV exp_mult			{}
-		| exp_cast MOD exp_mult			{}
+		| exp_cast ASTERISK exp_mult	{
+			union expression_union u;
+			$$ = expressionNew(MUL, u, $1, $3, @2.first_line, @2.first_column);
+		}
+		| exp_cast DIV exp_mult			{
+			union expression_union u;
+			$$ = expressionNew(DIV, u, $1, $3, @2.first_line, @2.first_column);
+		}
+		| exp_cast MOD exp_mult			{
+			union expression_union u;
+			$$ = expressionNew(MOD, u, $1, $3, @2.first_line, @2.first_column);
+		}
 ;
 
 exp_cast: exp_unary								{ $$ = $1; }
@@ -305,19 +391,49 @@ exp_cast: exp_unary								{ $$ = $1; }
 ;
 
 exp_unary: exp_postfix			{ $$ = $1; }
-		 | INC exp_unary		{}
-		 | DEC exp_unary		{}
-		 | AMPERSAND exp_cast	{}
-		 | ASTERISK exp_cast	{}
-		 | ADD exp_cast			{}
-		 | SUB exp_cast			{}
-		 | BIT_NOT exp_cast		{}
-		 | LOG_NOT exp_cast		{}
+		 | INC exp_unary		{
+			union expression_union u;
+			$$ = expressionNew(INC, u, $2, NULL, @1.first_line, @1.first_column);
+		 }
+		 | DEC exp_unary		{
+			union expression_union u;
+			$$ = expressionNew(DEC, u, $2, NULL, @1.first_line, @1.first_column);
+		 }
+		 | AMPERSAND exp_cast	{
+			union expression_union u;
+			$$ = expressionNew(ADDRESS, u, $2, NULL, @1.first_line, @1.first_column);
+		 }
+		 | ASTERISK exp_cast	{
+			union expression_union u;
+			$$ = expressionNew(POINTER_DEFERENCE, u, $2, NULL, @1.first_line, @1.first_column);
+		 }
+		 | ADD exp_cast			{
+			union expression_union u;
+			$$ = expressionNew(UNR_PLUS, u, $2, NULL, @1.first_line, @1.first_column);
+		 }
+		 | SUB exp_cast			{
+			union expression_union u;
+			$$ = expressionNew(UNR_MINUS, u, $2, NULL, @1.first_line, @1.first_column);
+		 }
+		 | BIT_NOT exp_cast		{
+			union expression_union u;
+			$$ = expressionNew(BIT_NOT, u, $2, NULL, @1.first_line, @1.first_column);
+		 }
+		 | LOG_NOT exp_cast		{
+			union expression_union u;
+			$$ = expressionNew(LOG_NOT, u, $2, NULL, @1.first_line, @1.first_column);
+		 }
 ;
 
 exp_postfix: exp_prim				{ $$ = $1; }
-		   | exp_postfix INC		{}
-		   | exp_postfix DEC		{}
+		   | exp_postfix INC		{
+				union expression_union u;
+				$$ = expressionNew(INC, u, $1, NULL, @2.first_line, @2.first_column);
+		   }
+		   | exp_postfix DEC		{
+				union expression_union u;
+				$$ = expressionNew(DEC, u, $1, NULL, @2.first_line, @2.first_column);
+		   }
 		   | exp_postfix LBRACK expressao RBRACK			{}
 		   | exp_postfix LPAREN RPAREN						{}
 		   | exp_postfix LPAREN exp_atr exp_postfix1 RPAREN	{}
@@ -330,7 +446,7 @@ exp_prim: IDENTIFIER	{
 			struct var_type t;
 			union symbol_union u;
 			Symbol *s = symbolNew(DECLARACAO_VARIAVEL, $1, t, u, @1.first_line, @1.first_column);
-			s = identifierLookup(Program_Table.Global_Symbol_Table, s);
+			s = identifierLookup(Current_Symbol_Table, s);
 			if(!s){ YYABORT; }
 			union expression_union exp = { .sym = s };
 			$$ = expressionNew(IDENTIFIER, exp, NULL, NULL, @1.first_line, @1.first_line);
@@ -366,6 +482,7 @@ pointer: ASTERISK pointer	{ $$ = $2 + 1; }
 array: LBRACK expressao RBRACK array	{
 			struct array *aux = malloc(sizeof(struct array));
 			aux->length = $2->node_value.num;
+			RpnWalk($2);
 			// aux->length = $2; // aux->length = solveConstantExpression($2);
 			aux->next = $4;
 
@@ -405,16 +522,18 @@ void yyerror(char *s){
 
 int main(int argc, char **argv){
 	Program_Table.Global_Symbol_Table = criaTabela(211);
+	Current_Symbol_Table = Program_Table.Global_Symbol_Table;
 
 	in_file = stdin;
 	yyparse();
 
-	// Symbol *aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "nuuuum");
-	// printSymbol(*aux);
-	// aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "abcd");
-	// printSymbol(*aux);
-	// aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "acdb");
-	// printSymbol(*aux);
+	fflush(stdout);
+	Symbol *aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "nuuuum");
+	printSymbol(*aux);
+	aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "abcd");
+	printSymbol(*aux);
+	aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "acdb");
+	printSymbol(*aux);
 
 	hashtableFinalizar(Program_Table.Global_Symbol_Table);
 
@@ -470,12 +589,19 @@ void semanticError(enum error_list erro, void* element){
 			sprintf(error_msg, "variable '%s' already declared, previous declaration in line %d column %d", s->id, aux->line, aux->column);
 			break;
 		}
-		case  REDEFINED_SYMBOL:
+		case REDEFINED_SYMBOL:
 		{
 			Symbol *s = element;
 			colunas = s->column;
 			Symbol *aux = identifierLookup(Program_Table.Global_Symbol_Table, s);
 			sprintf(error_msg, "redefinition of '%s' previous defined in line %d column %d", s->id, aux->line, aux->column);
+			break;
+		}
+		case VARIABLE_DECLARED_VOID:
+		{
+			Symbol *s = element;
+			colunas = s->column;
+			sprintf(error_msg, "variable '%s' declared void", s->id);
 			break;
 		}
 	}
