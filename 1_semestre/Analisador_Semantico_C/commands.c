@@ -144,7 +144,7 @@ void RpnWalk(Expression *root){
             printf("\"%s\" ", root->node_value.str);
             break;
         case CHARACTER:
-            printf("'%c' ", root->node_value.chr);
+            printf("%s ", root->node_value.chr);
             break;
         case IDENTIFIER:
             printf("%s ", root->node_value.sym->id);
@@ -152,141 +152,159 @@ void RpnWalk(Expression *root){
     }
 }
 
-int evaluateConstExpr(Expression *root){
-    int result = 0;
-    int no_l = evaluateConstExpr(root->left);
-    int no_r = evaluateConstExpr(root->right);
+Const_expr_state evaluateConstExpr(Expression *root){
+    Const_expr_state state = { 0, NO_ERROR, root };
+    if(!root)
+        { return state; }
+
+    Const_expr_state no_l = evaluateConstExpr(root->left);
+    if(no_l.error != NO_ERROR)
+        { return no_l; }
+    Const_expr_state no_r = evaluateConstExpr(root->right);
+    if(no_r.error != NO_ERROR)
+        { return no_r; }
+
     switch(root->node_type){
         // expressão atribuição
         case ASSIGN:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_r.value;
             break;
         case ADD_ASSIGN:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_r.value;
             break;
         case SUB_ASSIGN:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_r.value;
             break;
 
         // expressão condicional (_ ? _ : _)
 
-        // expressão or
-        case BIT_OR:
-            printf("%s ", root->node_value.sym->id);
-            break;
-
         // expressão or lógico
         case LOG_OR:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_l.value > no_r.value;
             break;
 
         // expressão and lógico
         case LOG_AND:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_l.value && no_r.value;
+            break;
+
+        // expressão or
+        case BIT_OR:
+            state.value = no_l.value | no_r.value;
             break;
 
         // expressão xor
         case BIT_XOR:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_l.value ^ no_r.value;
             break;
 
         // expressão and
         case BIT_AND:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_l.value & no_r.value;
             break;
         // expressão igualdade
         case EQUALS:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_l.value == no_r.value;
             break;
         case NOT_EQUALS:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_l.value != no_r.value;
             break;
 
         // expressão relacional
         case LESS:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_l.value < no_r.value;
             break;
         case LEQ:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_l.value <= no_r.value;
             break;
         case GEQ:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_l.value >= no_r.value;
             break;
         case GREAT:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_l.value > no_r.value;
             break;
 
         // expressão shift
         case RSHIFT:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_l.value >> no_r.value;
             break;
         case LSHIFT:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_l.value << no_r.value;
             break;
 
         // expressão aditiva
         case ADD:
-            result = no_l + no_r;
+            state.value = no_l.value + no_r.value;
             break;
         case SUB:
-            result = no_l - no_r;
+            state.value = no_l.value - no_r.value;
             break;
 
         // expressão multiplicativa
         case MUL:
-            result = no_l * no_r;
+            state.value = no_l.value * no_r.value;
             break;
         case DIV:
-            result = no_l  / no_r;
+            if(no_r.value == 0){
+                state.error = DIVISION_BY_ZERO;
+            }else{
+                state.value = no_l.value / no_r.value;
+            }
             break;
         case MOD:
-            result = no_l % no_r;
+            state.value = no_l.value % no_r.value;
             break;
 
         // expressão unária
         case ADDRESS:
-            printf("%s ", root->node_value.sym->id);
+            // printf("%s ", root->node_value.sym->id);
             break;
         case POINTER_DEFERENCE:
-            printf("%s ", root->node_value.sym->id);
+            // printf("%s ", root->node_value.sym->id);
             break;
         case UNR_PLUS:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_l.value;
             break;
         case UNR_MINUS:
-            printf("%s ", root->node_value.sym->id);
+            state.value = no_l.value * (-1);
             break;
         case BIT_NOT:
-            printf("%s ", root->node_value.sym->id);
+            state.value = ~no_l.value;
             break;
         case LOG_NOT:
-            printf("%s ", root->node_value.sym->id);
+            state.value = !no_l.value;
             break;
 
         // expressão pósfixa E unária
         case INC:
-            printf("1 + ");
+            state.value = no_l.value + 1;
             break;
         case DEC:
-            printf("1 - ");
+            state.value = no_l.value - 1;
             break;
 
 
         // expressão primária
         case NUM_INT:
-            printf("%d ", root->node_value.num);
+            state.value = root->node_value.num;
             break;
         case STRING:
             printf("\"%s\" ", root->node_value.str);
             break;
         case CHARACTER:
-            printf("'%c' ", root->node_value.chr);
+            state.value = root->node_value.chr[1];
             break;
         case IDENTIFIER:
-            printf("%s ", root->node_value.sym->id);
+            if(root->node_value.sym->symbol_type == DECLARACAO_VARIAVEL){
+                if(root->node_value.sym->var.v.constant){
+                    state.value = root->node_value.sym->var.v.value.i;
+                }else{
+                    state.error = INITIALIZER_NOT_CONST;
+                }
+            }
             break;
     }
-    return result;
+    return state;
 }
 
 void deleteTree(Expression *root){

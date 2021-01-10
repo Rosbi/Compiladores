@@ -112,8 +112,18 @@ int charFrequency(const char *str, char ch, int* col){
 "0"("x"|"X")([0-9]|[A-F]|[a-f])+	{ colunas+=strlen(yytext); char* p; yylval.integer=strtol(yytext, &p, 16); return NUM_HEXA; }
 "0"[0-9]+							{ colunas+=strlen(yytext); char* p; yylval.integer=strtol(yytext, &p,  8); return NUM_OCTA; }
 [0-9]+								{ colunas+=strlen(yytext); yylval.integer=atoi(yytext); return NUM_INT; }
-"\'""\\"?."\'"						{ colunas+=strlen(yytext); yylval.string=yytext; return CHARACTER; }
-\"(\\.|[^"\\])*\"					{ colunas+=strlen(yytext); yylval.string=yytext; return STRING; }
+"\'""\\"?."\'"						{
+										colunas+=strlen(yytext);
+										yylval.string=malloc(strlen(yytext)+1);
+										strcpy(yylval.string,yytext);
+										return CHARACTER;
+									}
+\"(\\.|[^"\\])*\"					{
+										colunas+=strlen(yytext);
+										yylval.string=malloc(strlen(yytext)+1);
+										strcpy(yylval.string,yytext);
+										return STRING;
+									}
 [_a-zA-Z][_a-zA-Z0-9]*				{
 										colunas+=strlen(yytext);
 										yylval.string=malloc(strlen(yytext)+1);

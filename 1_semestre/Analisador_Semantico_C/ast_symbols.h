@@ -25,7 +25,7 @@ typedef struct expression{
     int node_type;
     union expression_union{
         int num;
-        char chr;
+        char *chr;
         char *str;
         Symbol *sym;
     } node_value;
@@ -64,6 +64,7 @@ struct variable{
 //possíveis informações de uma função
 struct function_prototype{
     struct parameters{
+        struct var_type type;
         struct variable param;
         struct parameters *next;
     } *parameters;

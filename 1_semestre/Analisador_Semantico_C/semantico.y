@@ -10,13 +10,6 @@ extern int yylex();
 extern char* yytext;
 void yyerror(char *s);
 
-enum error_list {
-	UNDECLARED_SYMBOL,
-	REDEFINED_SYMBOL,
-	REDECLARED_SYMBOL,
-	VARIABLE_DECLARED_VOID
-};
-
 void printLine(FILE* in, int line_number);
 void semanticError(enum error_list erro, void* element);
 int identifierInsert(HashTable symbol_table, Symbol* s);
@@ -48,7 +41,7 @@ HashTable Current_Symbol_Table = NULL;
 %type <integer> NUM_INT
 %type <integer> NUM_HEXA
 %type <integer> NUM_OCTA
-%type <charac> CHARACTER
+%type <string> CHARACTER
 %type <symbol_union> declaracao_var1
 %type <array_union> array
 %type <expression_union> expressao
@@ -160,18 +153,17 @@ programa1: declaracoes	{}
 ;
 
 declaracoes: NUMBER_SIGN DEFINE IDENTIFIER expressao	{
-			   struct var_type t = { NUM_INT, 0 };
+			   struct var_type t = { TIPOS_INT, 0 };
 			   struct variable v = { NULL, true};
 			   union symbol_union u = { .v = v };
 			   Symbol *aux = symbolNew(DECLARACAO_VARIAVEL, $3, t, u, @3.first_line, @3.first_column);
 
-			   int *value = malloc(sizeof(int));
-			   *value = evaluateConstExpr($4);
-			   if(!value){
-				//    semanticError()
+			   Const_expr_state state = evaluateConstExpr($4);
+			   if(state.error != NO_ERROR){
+				   semanticError(state.error, state.exp);
 				   YYABORT;
 			   }else{
-				   aux->var.v.value.i = *value;
+				   aux->var.v.value.i = state.value;
 				   if(!identifierInsert(Current_Symbol_Table, aux)){ YYABORT; };
 			   }
 		   }
@@ -263,7 +255,6 @@ opt_exp: expressao		{}
 expressao: exp_atr					{ $$ = $1; }
 		 | expressao COMMA exp_atr	{ $$ = $3; }
 ;
-
 
 exp_atr: exp_cond						{ $$ = $1; }
 	   | exp_unary ASSIGN exp_atr		{
@@ -449,19 +440,20 @@ exp_prim: IDENTIFIER	{
 			s = identifierLookup(Current_Symbol_Table, s);
 			if(!s){ YYABORT; }
 			union expression_union exp = { .sym = s };
-			$$ = expressionNew(IDENTIFIER, exp, NULL, NULL, @1.first_line, @1.first_line);
+			$$ = expressionNew(IDENTIFIER, exp, NULL, NULL, @1.first_line, @1.first_column);
 		}
 		| number		{
 			union expression_union exp = { .num = $1 };
-			$$ = expressionNew(NUM_INT, exp, NULL, NULL, @1.first_line, @1.first_line);
+			$$ = expressionNew(NUM_INT, exp, NULL, NULL, @1.first_line, @1.first_column);
 		}
 		| CHARACTER		{
 			union expression_union exp = { .chr = $1 };
-			$$ = expressionNew(CHARACTER, exp, NULL, NULL, @1.first_line, @1.first_line);
+			printf("-- %c, %d\n", $1[1], $1[1]);
+			$$ = expressionNew(CHARACTER, exp, NULL, NULL, @1.first_line, @1.first_column);
 		}
 		| STRING		{
 			union expression_union exp = { .str = $1 };
-			$$ = expressionNew(STRING, exp, NULL, NULL, @1.first_line, @1.first_line);
+			$$ = expressionNew(STRING, exp, NULL, NULL, @1.first_line, @1.first_column);
 		}
 		| LPAREN expressao RPAREN	{ $$ = $2; }
 ;
@@ -482,9 +474,14 @@ pointer: ASTERISK pointer	{ $$ = $2 + 1; }
 array: LBRACK expressao RBRACK array	{
 			struct array *aux = malloc(sizeof(struct array));
 			aux->length = $2->node_value.num;
-			RpnWalk($2);
-			// aux->length = $2; // aux->length = solveConstantExpression($2);
-			aux->next = $4;
+			Const_expr_state state = evaluateConstExpr($2);
+			if(state.error != NO_ERROR){
+				semanticError(state.error, state.exp);
+				YYABORT;
+			}else{
+				aux->length = state.value;
+				aux->next = $4;
+			}
 
 			$$ = aux;
 		}
@@ -534,6 +531,8 @@ int main(int argc, char **argv){
 	printSymbol(*aux);
 	aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "acdb");
 	printSymbol(*aux);
+	aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "value");
+	printSymbol(*aux);
 
 	hashtableFinalizar(Program_Table.Global_Symbol_Table);
 
@@ -577,6 +576,7 @@ void semanticError(enum error_list erro, void* element){
 		case UNDECLARED_SYMBOL:
 		{
 			Symbol *s = element;
+			linhas = s->line;
 			colunas = s->column;
 			sprintf(error_msg, "'%s' undeclared", s->id);
 			break;
@@ -584,6 +584,7 @@ void semanticError(enum error_list erro, void* element){
 		case REDECLARED_SYMBOL:
 		{
 			Symbol *s = element;
+			linhas = s->line;
 			colunas = s->column;
 			Symbol *aux = identifierLookup(Program_Table.Global_Symbol_Table, s);
 			sprintf(error_msg, "variable '%s' already declared, previous declaration in line %d column %d", s->id, aux->line, aux->column);
@@ -592,6 +593,7 @@ void semanticError(enum error_list erro, void* element){
 		case REDEFINED_SYMBOL:
 		{
 			Symbol *s = element;
+			linhas = s->line;
 			colunas = s->column;
 			Symbol *aux = identifierLookup(Program_Table.Global_Symbol_Table, s);
 			sprintf(error_msg, "redefinition of '%s' previous defined in line %d column %d", s->id, aux->line, aux->column);
@@ -600,10 +602,33 @@ void semanticError(enum error_list erro, void* element){
 		case VARIABLE_DECLARED_VOID:
 		{
 			Symbol *s = element;
+			linhas = s->line;
 			colunas = s->column;
 			sprintf(error_msg, "variable '%s' declared void", s->id);
 			break;
 		}
+		case DIVISION_BY_ZERO:
+		{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "division by zero");
+			break;
+		}
+		case INITIALIZER_NOT_CONST:
+		{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "'%s' initializer element is not constant", exp->node_value.sym->id);
+			break;
+		}
+		case STRING_DEFINE:
+		{
+			break;
+		}
+		default:
+			return;
 	}
 
 	printf("error:semantic:%d:%d: ", linhas, colunas);
