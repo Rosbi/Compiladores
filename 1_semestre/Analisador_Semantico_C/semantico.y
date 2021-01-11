@@ -156,8 +156,13 @@ declaracoes: NUMBER_SIGN DEFINE IDENTIFIER expressao	{
 			   struct var_type t = { TIPOS_INT, 0 };
 			   struct variable v = { NULL, true};
 			   union symbol_union u = { .v = v };
-			   Symbol *aux = symbolNew(DECLARACAO_VARIAVEL, $3, t, u, @3.first_line, @3.first_column);
 
+			   if($4->node_type == STRING){
+				   semanticError(STRING_DEFINE, $4);
+				   YYABORT;
+			   }
+
+			   Symbol *aux = symbolNew(DECLARACAO_VARIAVEL, $3, t, u, @3.first_line, @3.first_column);
 			   Const_expr_state state = evaluateConstExpr($4);
 			   if(state.error != NO_ERROR){
 				   semanticError(state.error, state.exp);
@@ -625,10 +630,38 @@ void semanticError(enum error_list erro, void* element){
 		}
 		case STRING_DEFINE:
 		{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "string type is not compatible with define");
 			break;
 		}
-		default:
-			return;
+		case STRING_ASSIGNMENT:
+		{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "assignment of read-only location %s", exp->node_value.str);
+			break;
+		}
+		case CONST_IDENTIFIER_ASSIGNMENT:
+		{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "assignment of read-only identifier \"%s\"", exp->node_value.sym->id);
+			break;
+		}
+		case RVALUE_ASSIGNMENT:
+		{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "lvalue required as left operand of assignment");
+			break;
+		}
+		// default:
+		// 	return;
 	}
 
 	printf("error:semantic:%d:%d: ", linhas, colunas);

@@ -12,7 +12,10 @@ typedef enum error_list {
 	VARIABLE_DECLARED_VOID,
     INITIALIZER_NOT_CONST,
     STRING_DEFINE,
-    DIVISION_BY_ZERO
+    DIVISION_BY_ZERO,
+    STRING_ASSIGNMENT,
+    CONST_IDENTIFIER_ASSIGNMENT,
+    RVALUE_ASSIGNMENT
 }Error_list;
 
 typedef struct const_expr_state{

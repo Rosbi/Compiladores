@@ -167,13 +167,20 @@ Const_expr_state evaluateConstExpr(Expression *root){
     switch(root->node_type){
         // expressão atribuição
         case ASSIGN:
-            state.value = no_r.value;
-            break;
         case ADD_ASSIGN:
-            state.value = no_r.value;
-            break;
         case SUB_ASSIGN:
-            state.value = no_r.value;
+            if(no_l.exp->node_type == STRING || no_l.exp->node_type == CHARACTER){
+                state.error = STRING_ASSIGNMENT;
+                state.exp = no_l.exp;
+            }else if(no_l.exp->node_type == IDENTIFIER){
+                state.error = CONST_IDENTIFIER_ASSIGNMENT;
+                state.exp = no_l.exp;
+            }else{
+                state.error = RVALUE_ASSIGNMENT;
+                while(root=root->left, root!= NULL){
+                    state.exp = root;
+                }
+            }
             break;
 
         // expressão condicional (_ ? _ : _)
