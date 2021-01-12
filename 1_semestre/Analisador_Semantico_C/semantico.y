@@ -14,6 +14,7 @@ void printLine(FILE* in, int line_number);
 void semanticError(enum error_list erro, void* element);
 int identifierInsert(HashTable symbol_table, Symbol* s);
 Symbol* identifierLookup(HashTable symbol_table, Symbol *s);
+int varInsertAndCheck(HashTable symbol_table, Symbol* s);
 
 extern int colunas;
 extern int linhas;
@@ -31,6 +32,7 @@ HashTable Current_Symbol_Table = NULL;
 	struct symbol* symbol_union;
 	struct array* array_union;
 	struct expression* expression_union;
+	struct parameters* parameters_union;
 }
 
 %type <string> STRING
@@ -44,6 +46,7 @@ HashTable Current_Symbol_Table = NULL;
 %type <string> CHARACTER
 %type <symbol_union> declaracao_var1
 %type <array_union> array
+%type <expression_union> opt_assign
 %type <expression_union> expressao
 %type <expression_union> exp_atr
 %type <expression_union> exp_cond
@@ -62,6 +65,8 @@ HashTable Current_Symbol_Table = NULL;
 %type <expression_union> exp_postfix
 %type <expression_union> exp_postfix1
 %type <expression_union> exp_prim
+%type <parameters_union> parametros
+%type <parameters_union> parametros1
 
 /* declare tokens */
 %token VOID_T
@@ -132,6 +137,8 @@ HashTable Current_Symbol_Table = NULL;
 %token POINTER_DEFERENCE
 %token UNR_PLUS
 %token UNR_MINUS
+%token CONDITIONAL_EXP
+%token CONDITIONAL_EXP_THENELSE
 
 	/* unused tokens */
 %token BREAK_T
@@ -152,7 +159,8 @@ programa1: declaracoes	{}
 		 | funcao		{}
 ;
 
-declaracoes: NUMBER_SIGN DEFINE IDENTIFIER expressao	{
+declaracoes: 
+		   NUMBER_SIGN DEFINE IDENTIFIER expressao	{
 			   struct var_type t = { TIPOS_INT, 0 };
 			   struct variable v = { NULL, true};
 			   union symbol_union u = { .v = v };
@@ -179,53 +187,68 @@ declaracoes: NUMBER_SIGN DEFINE IDENTIFIER expressao	{
 declaracao_var: tipo declaracao_var1 SEMICOLON	{}
 ;
 declaracao_var1:
-	pointer IDENTIFIER array ASSIGN exp_atr declaracao_var_fim	{
-		Symbol *aux;
+	pointer IDENTIFIER array opt_assign							{
 		struct var_type t = { g_tipo, $1 };
 		struct variable v = { $3, false };
 		union symbol_union u = { .v = v };
-		aux = symbolNew(DECLARACAO_VARIAVEL, $2, t, u, @2.first_line, @2.first_column);
-
-		if(g_tipo == TIPOS_VOID && aux->type.pointers == 0){
-			semanticError(VARIABLE_DECLARED_VOID, aux);
-			YYABORT;
-		}
-		if(!identifierInsert(Current_Symbol_Table, aux)){ YYABORT; };
+		Symbol *aux = symbolNew(DECLARACAO_VARIAVEL, $2, t, u, @2.first_line, @2.first_column);
+		if(!varInsertAndCheck(Current_Symbol_Table, aux)){ YYABORT; }
 	}
-	| pointer IDENTIFIER array declaracao_var_fim				{
-		Symbol *aux;
-		struct var_type t = { g_tipo, $1 };
-		struct variable v = { $3, false };
+	| declaracao_var1 COMMA pointer IDENTIFIER array opt_assign	{
+		struct var_type t = { g_tipo, $3 };
+		struct variable v = { $5, false };
 		union symbol_union u = { .v = v };
-		aux = symbolNew(DECLARACAO_VARIAVEL, $2, t, u, @2.first_line, @2.first_column);
-
-		if(g_tipo == TIPOS_VOID && aux->type.pointers == 0){
-			semanticError(VARIABLE_DECLARED_VOID, aux);
-			YYABORT;
-		}
-		if(!identifierInsert(Current_Symbol_Table, aux)){ YYABORT; };
+		Symbol *aux = symbolNew(DECLARACAO_VARIAVEL, $4, t, u, @4.first_line, @4.first_column);
+		if(!varInsertAndCheck(Current_Symbol_Table, aux)){ YYABORT; }
 	}
 ;
-declaracao_var_fim: COMMA declaracao_var1	{}
-				  | /* epsilon */			{}
+opt_assign: ASSIGN exp_atr	{}
+		  | /* epsilon */	{}
 ;
 
-declaracao_prot: tipo pointer IDENTIFIER parametros SEMICOLON	{}
+declaracao_prot: function_header SEMICOLON	{}
 ;
 
-funcao: tipo pointer IDENTIFIER parametros LCBRACK func_dec_var comandos RCBRACK	{}
+funcao: function_header new_scope function_body	{
+			Current_Symbol_Table = Program_Table.Global_Symbol_Table;
+		}
 ;
-func_dec_var: declaracao_var func_dec_var	{}
+new_scope: LCBRACK	{
+				Current_Symbol_Table = criaTabela(211);
+			}
+;
+func_dec_var: func_dec_var declaracao_var	{}
 			| /* epsilon */					{}
 ;
+function_header: tipo pointer IDENTIFIER parametros	{
+						struct var_type t = { g_tipo, $2 };
+						struct function_prototype fp = { $4 };
+						union symbol_union u = { .f = fp };
+						Symbol *aux = symbolNew(DECLARACAO_FUNCAO, $3, t, u, @3.first_line, @3.first_column);
+						if(!identifierInsert(Current_Symbol_Table, aux)){ YYABORT; }
+					}
+;
+function_body: func_dec_var comandos RCBRACK {}
+;
 
-parametros: LPAREN parametros1 RPAREN	{}
+parametros: LPAREN parametros1 RPAREN	{ $$ = $2; }
+		  | LPAREN RPAREN				{ $$ = NULL; }
 ;
-parametros1: tipo pointer IDENTIFIER array parametros_fim	{}
-		   | /* epsilon */		{}
-;
-parametros_fim: COMMA parametros1	{}
-			  | /* epsilon */		{}
+parametros1: tipo pointer IDENTIFIER array						{
+					struct var_type t = { $1, $2 };
+					struct variable v = { $4, false };
+					$$ = parameterNew($3, t, v, @3.first_line, @3.first_column, NULL);
+				}
+		   | parametros1 COMMA tipo pointer IDENTIFIER array	{
+					struct var_type t = { $3, $4 };
+					struct variable v = { $6, false };
+					struct parameters *aux = $1, *param = parameterNew($5, t, v, @5.first_line, @5.first_column, NULL);
+					while(aux->next){
+						aux = aux->next;
+					}
+					aux->next = param;
+					$$ = $1;
+				}
 ;
 
 bloco: LCBRACK comandos RCBRACK	{}
@@ -277,7 +300,11 @@ exp_atr: exp_cond						{ $$ = $1; }
 ;
 
 exp_cond: exp_log_or										{ $$ = $1; }
-		| exp_log_or QUEST_MARK expressao COLON exp_cond	{}
+		| exp_log_or QUEST_MARK expressao COLON exp_cond	{
+			union expression_union u;
+			Expression *aux = expressionNew(CONDITIONAL_EXP_THENELSE, u, $3, $5, @4.first_line, @4.first_column);
+			$$ = expressionNew(CONDITIONAL_EXP, u, $1, aux, @2.first_line, @2.first_column);
+		}
 ;
 
 exp_log_or: exp_log_and						{ $$ = $1; }
@@ -432,10 +459,10 @@ exp_postfix: exp_prim				{ $$ = $1; }
 		   }
 		   | exp_postfix LBRACK expressao RBRACK			{}
 		   | exp_postfix LPAREN RPAREN						{}
-		   | exp_postfix LPAREN exp_atr exp_postfix1 RPAREN	{}
+		   | exp_postfix LPAREN exp_postfix1 RPAREN	{}
 ;
-exp_postfix1: COMMA exp_atr exp_postfix1	{}
-			| /* epsilon */					{}
+exp_postfix1: exp_atr						{}
+			| exp_postfix1 COMMA exp_atr	{}
 ;
 
 exp_prim: IDENTIFIER	{
@@ -468,9 +495,9 @@ number: NUM_INT		{ $$ = $1; }
 	  | NUM_OCTA	{ $$ = $1; }
 ;
 
-tipo: INT_T		{ g_tipo = TIPOS_INT; }
-	| CHAR_T	{ g_tipo = TIPOS_CHAR; }
-	| VOID_T	{ g_tipo = TIPOS_VOID; }
+tipo: INT_T		{ $$ = g_tipo = TIPOS_INT; }
+	| CHAR_T	{ $$ = g_tipo = TIPOS_CHAR; }
+	| VOID_T	{ $$ = g_tipo = TIPOS_VOID; }
 ;
 
 pointer: ASTERISK pointer	{ $$ = $2 + 1; }
@@ -478,12 +505,12 @@ pointer: ASTERISK pointer	{ $$ = $2 + 1; }
 ;
 array: LBRACK expressao RBRACK array	{
 			struct array *aux = malloc(sizeof(struct array));
-			aux->length = $2->node_value.num;
 			Const_expr_state state = evaluateConstExpr($2);
 			if(state.error != NO_ERROR){
 				semanticError(state.error, state.exp);
 				YYABORT;
 			}else{
+				// aux->exp = $2;
 				aux->length = state.value;
 				aux->next = $4;
 			}
@@ -549,8 +576,11 @@ int identifierInsert(HashTable symbol_table, Symbol* s){
 	if(!aux){
 		insereRegistro(symbol_table, s->id, s);
 	}else{
-		if(aux->type.type == s->type.pointers && aux->type.pointers){
-			semanticError(REDECLARED_SYMBOL, s);
+		if(aux->type.type == s->type.type && aux->type.pointers == s->type.pointers){
+			if(s->symbol_type == DECLARACAO_VARIAVEL)
+				{ semanticError(REDECLARED_SYMBOL, s); }
+			else
+				{ semanticError(REDEFINED_SYMBOL, s); }
 		}else{
 			semanticError(REDEFINED_SYMBOL, s);
 		}
@@ -572,6 +602,28 @@ Symbol* identifierLookup(HashTable symbol_table, Symbol *s){
 	}
 
 	return aux;
+}
+int varInsertAndCheck(HashTable symbol_table, Symbol* s){
+	struct array *a = s->var.v.array;
+	while(a){
+		if(a->length < 0){
+			semanticError(ARR_NEGATIVE_INITIALIZER, s);
+			return 0;
+		}else if(a->length == 0){
+			semanticError(ARR_ZERO_INITIALIZER, s);
+			return 0;
+		}
+		a = a->next;
+	}
+
+	if(s->type.type == TIPOS_VOID && s->type.pointers == 0){
+		semanticError(VARIABLE_DECLARED_VOID, s);
+		return 0;
+	}
+	if(!identifierInsert(symbol_table, s)){
+		return 0;
+	};
+	return 1;
 }
 
 void semanticError(enum error_list erro, void* element){
@@ -658,6 +710,22 @@ void semanticError(enum error_list erro, void* element){
 			linhas = exp->line;
 			colunas = exp->column;
 			sprintf(error_msg, "lvalue required as left operand of assignment");
+			break;
+		}
+		case ARR_NEGATIVE_INITIALIZER:
+		{
+			Symbol *s = element;
+			linhas = s->line;
+			colunas = s->column;
+			sprintf(error_msg, "size of array '%s' is negative", s->id);
+			break;
+		}
+		case ARR_ZERO_INITIALIZER:
+		{
+			Symbol *s = element;
+			linhas = s->line;
+			colunas = s->column;
+			sprintf(error_msg, "size of array '%s' is zero", s->id);
 			break;
 		}
 		// default:

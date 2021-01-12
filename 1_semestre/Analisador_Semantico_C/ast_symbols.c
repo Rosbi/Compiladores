@@ -29,6 +29,34 @@ void printSymbol(Symbol s){
             printf(" Coluna: %d\n\n", s.column);
             break;
         case DECLARACAO_FUNCAO:
+            printf("\nFunção: %d:%d ", s.line, s.column);
+            switch(s.type.type){
+                case TIPOS_INT:  printf("int");  break;
+                case TIPOS_CHAR: printf("char"); break;
+                case TIPOS_VOID: printf("void"); break;
+            }
+            for(int i=0;i<s.type.pointers;i++)
+                { printf("*"); }
+            printf(" %s(", s.id);
+            struct parameters *aux;
+            for(aux=s.var.f.parameters;aux!=NULL;aux=aux->next){
+                switch(aux->type.type){
+                    case TIPOS_INT:  printf("int");  break;
+                    case TIPOS_CHAR: printf("char"); break;
+                    case TIPOS_VOID: printf("void"); break;
+                }
+                for(int i=0;i<aux->type.pointers;i++)
+                    { printf("*"); }
+                printf(" %s", aux->id);
+                struct array *arr = aux->param.array;
+                while(arr){
+                    printf("[%d]", arr->length);
+                    arr = arr->next;
+                }
+                printf(", ");
+            }
+            printf(")\n\n");
+
             break;
     }
 }
@@ -42,6 +70,19 @@ Symbol* symbolNew(int symbol_type, char *id, struct var_type t, union symbol_uni
     aux->var = su;
     aux->line = line;
     aux->column = column;
+
+    return aux;
+}
+
+struct parameters* parameterNew(char *id, struct var_type t, struct variable v, int line, int column, struct parameters *next){
+    struct parameters *aux = malloc(sizeof(struct parameters));
+    aux->id = malloc((strlen(id) + 1) * sizeof(char));
+    strcpy(aux->id, id);
+    aux->type = t;
+    aux->param = v;
+    aux->line = line;
+    aux-> column = column;
+    aux->next = next;
 
     return aux;
 }

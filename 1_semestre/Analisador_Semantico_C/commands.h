@@ -15,7 +15,9 @@ typedef enum error_list {
     DIVISION_BY_ZERO,
     STRING_ASSIGNMENT,
     CONST_IDENTIFIER_ASSIGNMENT,
-    RVALUE_ASSIGNMENT
+    RVALUE_ASSIGNMENT,
+    ARR_NEGATIVE_INITIALIZER,
+    ARR_ZERO_INITIALIZER
 }Error_list;
 
 typedef struct const_expr_state{

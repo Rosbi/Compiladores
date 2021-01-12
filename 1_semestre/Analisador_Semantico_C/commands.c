@@ -184,6 +184,14 @@ Const_expr_state evaluateConstExpr(Expression *root){
             break;
 
         // expressão condicional (_ ? _ : _)
+        case CONDITIONAL_EXP:
+            if(no_l.value){
+                no_r = evaluateConstExpr(no_r.exp->left);
+            }else{
+                no_r = evaluateConstExpr(no_r.exp->right);
+            }
+            state.value = no_r.value;
+            break;
 
         // expressão or lógico
         case LOG_OR:

@@ -52,6 +52,7 @@ struct var_type{
 struct variable{
     struct array{
         int length;
+        // Expression *exp;
         struct array *next;
     } *array;
     bool constant;
@@ -64,8 +65,11 @@ struct variable{
 //possíveis informações de uma função
 struct function_prototype{
     struct parameters{
+        char *id;
         struct var_type type;
         struct variable param;
+        int line;
+        int column;
         struct parameters *next;
     } *parameters;
 };
@@ -102,6 +106,8 @@ struct{
 } Program_Table;
 
 void printSymbol(Symbol);
+
 Symbol* symbolNew(int symbol_type, char *id, struct var_type t, union symbol_union su, int line, int column);
+struct parameters* parameterNew(char *id, struct var_type t, struct variable v, int line, int column, struct parameters *next);
 
 #endif
