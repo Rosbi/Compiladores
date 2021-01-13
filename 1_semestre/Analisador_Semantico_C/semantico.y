@@ -45,6 +45,7 @@ HashTable Current_Symbol_Table = NULL;
 %type <integer> NUM_OCTA
 %type <string> CHARACTER
 %type <symbol_union> declaracao_var1
+%type <symbol_union> function_header
 %type <array_union> array
 %type <expression_union> opt_assign
 %type <expression_union> expressao
@@ -209,16 +210,34 @@ opt_assign: ASSIGN exp_atr	{}
 declaracao_prot: function_header SEMICOLON	{}
 ;
 
-funcao: function_header new_scope function_body	{
+funcao: function_header LCBRACK {
+			Current_Symbol_Table = criaTabela(211);
+
+			struct function_definition func = { Current_Symbol_Table, NULL, $1->type, $1->var.f };
+			func.name = malloc((strlen($1->id) + 1) * sizeof(char));
+			strcpy(func.name, $1->id);
+
+			for(struct parameters *params=$1->var.f.parameters;params;params=params->next){
+				if(!varInsertAndCheck(Current_Symbol_Table, params->symbol)){ YYABORT; }
+				printSymbol(getPrimeiroRegistro(Current_Symbol_Table, params->symbol->id));
+				// printSymbol(params->symbol);fflush(stdout);
+			}
+
+			if(!Program_Table.head){
+				Program_Table.head = malloc(sizeof(struct function_list));
+				Program_Table.head->function = func;
+				Program_Table.head->next = NULL;
+			}else{
+				struct function_list *aux = Program_Table.head;
+				while(aux->next)
+					{ aux = aux->next; }
+				aux->next = malloc(sizeof(struct function_list));
+				aux->next->function = func;
+				aux->next->next = NULL;
+			}
+		} function_body {
 			Current_Symbol_Table = Program_Table.Global_Symbol_Table;
 		}
-;
-new_scope: LCBRACK	{
-				Current_Symbol_Table = criaTabela(211);
-			}
-;
-func_dec_var: func_dec_var declaracao_var	{}
-			| /* epsilon */					{}
 ;
 function_header: tipo pointer IDENTIFIER parametros	{
 						struct var_type t = { g_tipo, $2 };
@@ -226,9 +245,13 @@ function_header: tipo pointer IDENTIFIER parametros	{
 						union symbol_union u = { .f = fp };
 						Symbol *aux = symbolNew(DECLARACAO_FUNCAO, $3, t, u, @3.first_line, @3.first_column);
 						if(!identifierInsert(Current_Symbol_Table, aux)){ YYABORT; }
+						$$ = aux;
 					}
 ;
 function_body: func_dec_var comandos RCBRACK {}
+;
+func_dec_var: func_dec_var declaracao_var	{}
+			| /* epsilon */					{}
 ;
 
 parametros: LPAREN parametros1 RPAREN	{ $$ = $2; }
@@ -237,12 +260,27 @@ parametros: LPAREN parametros1 RPAREN	{ $$ = $2; }
 parametros1: tipo pointer IDENTIFIER array						{
 					struct var_type t = { $1, $2 };
 					struct variable v = { $4, false };
-					$$ = parameterNew($3, t, v, @3.first_line, @3.first_column, NULL);
+					union symbol_union u = { .v = v };
+					struct parameters *param = malloc(sizeof(struct parameters));
+					param->symbol = symbolNew(DECLARACAO_VARIAVEL, $3, t, u, @3.first_line, @3.first_column);
+					param->next = NULL;
+					if(t.type == TIPOS_VOID && t.pointers == 0){
+						semanticError(PARAMETER_DECLARED_VOID, $$->symbol);
+						YYABORT;
+					}
+					$$ = param;
 				}
 		   | parametros1 COMMA tipo pointer IDENTIFIER array	{
 					struct var_type t = { $3, $4 };
 					struct variable v = { $6, false };
-					struct parameters *aux = $1, *param = parameterNew($5, t, v, @5.first_line, @5.first_column, NULL);
+					union symbol_union u = { .v = v };
+					struct parameters *aux = $1, *param = malloc(sizeof(struct parameters));
+					param->symbol = symbolNew(DECLARACAO_VARIAVEL, $5, t, u, @5.first_line, @5.first_column);
+					param->next = NULL;
+					if(t.type == TIPOS_VOID && t.pointers == 0){
+						semanticError(PARAMETER_DECLARED_VOID, aux->symbol);
+						YYABORT;
+					}
 					while(aux->next){
 						aux = aux->next;
 					}
@@ -556,15 +594,15 @@ int main(int argc, char **argv){
 	in_file = stdin;
 	yyparse();
 
-	fflush(stdout);
-	Symbol *aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "nuuuum");
-	printSymbol(*aux);
-	aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "abcd");
-	printSymbol(*aux);
-	aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "acdb");
-	printSymbol(*aux);
-	aux = getPrimeiroRegistro(Program_Table.Global_Symbol_Table, "value");
-	printSymbol(*aux);
+	//printa as tabelas
+	printf("\nGlobal Symbols:\n");
+	HshTblMap(Program_Table.Global_Symbol_Table, printSymbol);
+	// HshTblMap(Program_Table.Global_Symbol_Table, freeSymbol);
+	for(struct function_list *aux=Program_Table.head;aux;aux=aux->next){
+		printf("\n%s Local Symbols:\n", aux->function.name);
+		HshTblMap(aux->function.Local_Symbol_Table, printSymbol);
+		// HshTblMap(aux->function.Local_Symbol_Table, freeSymbol);
+	}
 
 	hashtableFinalizar(Program_Table.Global_Symbol_Table);
 
@@ -726,6 +764,14 @@ void semanticError(enum error_list erro, void* element){
 			linhas = s->line;
 			colunas = s->column;
 			sprintf(error_msg, "size of array '%s' is zero", s->id);
+			break;
+		}
+		case PARAMETER_DECLARED_VOID:
+		{
+			Symbol *s = element;
+			linhas = s->line;
+			colunas = s->column;
+			sprintf(error_msg, "parameter '%s' declared void", s->id);
 			break;
 		}
 		// default:

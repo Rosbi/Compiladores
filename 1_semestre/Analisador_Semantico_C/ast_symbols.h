@@ -4,6 +4,7 @@
 #include<stdbool.h>
 // #include<semantico.tab.h>
 #include"hashTable.h"
+#include<stdarg.h>
 
 typedef struct symbol Symbol;
 
@@ -65,11 +66,12 @@ struct variable{
 //possíveis informações de uma função
 struct function_prototype{
     struct parameters{
-        char *id;
-        struct var_type type;
-        struct variable param;
-        int line;
-        int column;
+        // char *id;
+        // struct var_type type;
+        // struct variable param;
+        // int line;
+        // int column;
+        struct symbol *symbol;
         struct parameters *next;
     } *parameters;
 };
@@ -105,9 +107,13 @@ struct{
     } *head;
 } Program_Table;
 
-void printSymbol(Symbol);
+void printSymbol(Symbol*);
 
 Symbol* symbolNew(int symbol_type, char *id, struct var_type t, union symbol_union su, int line, int column);
-struct parameters* parameterNew(char *id, struct var_type t, struct variable v, int line, int column, struct parameters *next);
+// struct parameters* parameterNew(char *id, struct var_type t, struct variable v, int line, int column, struct parameters *next);
+
+void freeSymbol(Symbol *);
+void freeParameters(struct parameters *p);
+void freeArray(struct array *a);
 
 #endif

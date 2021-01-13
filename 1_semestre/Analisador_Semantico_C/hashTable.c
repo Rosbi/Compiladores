@@ -212,7 +212,7 @@ void* hashtableFinalizar(HashTable tabela){
                 aux2 = aux->next;
                 if(aux->key != NULL){
                     free(aux->key);
-                    free(aux);
+                    // free(aux);
                     aux = NULL;
                 }
             }while(aux2 != NULL);
