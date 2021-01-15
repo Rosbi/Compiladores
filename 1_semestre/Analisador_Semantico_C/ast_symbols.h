@@ -65,6 +65,7 @@ struct variable{
 
 //possíveis informações de uma função
 struct function_prototype{
+    bool has_definition;
     struct parameters{
         // char *id;
         // struct var_type type;

@@ -12,9 +12,10 @@ void yyerror(char *s);
 
 void printLine(FILE* in, int line_number);
 void semanticError(enum error_list erro, void* element);
-int identifierInsert(HashTable symbol_table, Symbol* s);
 Symbol* identifierLookup(HashTable symbol_table, Symbol *s);
+int identifierInsert(HashTable symbol_table, Symbol* s);
 int varInsertAndCheck(HashTable symbol_table, Symbol* s);
+int matchPrototypes(Symbol pro1, Symbol pro2);
 
 extern int colunas;
 extern int linhas;
@@ -211,6 +212,7 @@ declaracao_prot: function_header SEMICOLON	{}
 ;
 
 funcao: function_header LCBRACK {
+			$1->var.f.has_definition = true;
 			Current_Symbol_Table = criaTabela(211);
 
 			struct function_definition func = { Current_Symbol_Table, NULL, $1->type, $1->var.f };
@@ -219,8 +221,6 @@ funcao: function_header LCBRACK {
 
 			for(struct parameters *params=$1->var.f.parameters;params;params=params->next){
 				if(!varInsertAndCheck(Current_Symbol_Table, params->symbol)){ YYABORT; }
-				printSymbol(getPrimeiroRegistro(Current_Symbol_Table, params->symbol->id));
-				// printSymbol(params->symbol);fflush(stdout);
 			}
 
 			if(!Program_Table.head){
@@ -240,8 +240,8 @@ funcao: function_header LCBRACK {
 		}
 ;
 function_header: tipo pointer IDENTIFIER parametros	{
-						struct var_type t = { g_tipo, $2 };
-						struct function_prototype fp = { $4 };
+						struct var_type t = { $1, $2 };
+						struct function_prototype fp = { false, $4 };
 						union symbol_union u = { .f = fp };
 						Symbol *aux = symbolNew(DECLARACAO_FUNCAO, $3, t, u, @3.first_line, @3.first_column);
 						if(!identifierInsert(Current_Symbol_Table, aux)){ YYABORT; }
@@ -265,7 +265,7 @@ parametros1: tipo pointer IDENTIFIER array						{
 					param->symbol = symbolNew(DECLARACAO_VARIAVEL, $3, t, u, @3.first_line, @3.first_column);
 					param->next = NULL;
 					if(t.type == TIPOS_VOID && t.pointers == 0){
-						semanticError(PARAMETER_DECLARED_VOID, $$->symbol);
+						semanticError(PARAMETER_DECLARED_VOID, param->symbol);
 						YYABORT;
 					}
 					$$ = param;
@@ -278,7 +278,7 @@ parametros1: tipo pointer IDENTIFIER array						{
 					param->symbol = symbolNew(DECLARACAO_VARIAVEL, $5, t, u, @5.first_line, @5.first_column);
 					param->next = NULL;
 					if(t.type == TIPOS_VOID && t.pointers == 0){
-						semanticError(PARAMETER_DECLARED_VOID, aux->symbol);
+						semanticError(PARAMETER_DECLARED_VOID, param->symbol);
 						YYABORT;
 					}
 					while(aux->next){
@@ -597,32 +597,73 @@ int main(int argc, char **argv){
 	//printa as tabelas
 	printf("\nGlobal Symbols:\n");
 	HshTblMap(Program_Table.Global_Symbol_Table, printSymbol);
-	// HshTblMap(Program_Table.Global_Symbol_Table, freeSymbol);
 	for(struct function_list *aux=Program_Table.head;aux;aux=aux->next){
 		printf("\n%s Local Symbols:\n", aux->function.name);
 		HshTblMap(aux->function.Local_Symbol_Table, printSymbol);
-		// HshTblMap(aux->function.Local_Symbol_Table, freeSymbol);
 	}
-
+	/*
+	//liberação de memória
+	HshTblMap(Program_Table.Global_Symbol_Table, freeSymbol);
+	for(struct function_list *aux=Program_Table.head;aux;aux=aux->next){
+		HshTblMap(aux->function.Local_Symbol_Table, freeSymbol);
+	}
+	*/
 	hashtableFinalizar(Program_Table.Global_Symbol_Table);
 
     return 0;
 }
 
+int matchPrototypes(Symbol pro1, Symbol pro2){
+	struct parameters *param1 = pro1.var.f.parameters;
+	struct parameters *param2 = pro2.var.f.parameters;
+	for(;param1 && param2;param1=param1->next, param2=param2->next){
+		Symbol sym1 = *param1->symbol;
+		Symbol sym2 = *param2->symbol;
+		if(sym1.type.type != sym2.type.type /**/ || sym1.type.pointers != sym2.type.pointers /**/){
+			semanticError(ARGUMENT_DIFF_PROTOTYPE, &sym2);
+			return ARGUMENT_DIFF_PROTOTYPE;
+		}
+		// else if(!sym1.var.v.array && !sym2.var.v.array){
+		// 	if(sym1.type.pointers != sym2.type.pointers)
+		// 		{ return ARGUMENT_DIFF_PROTOTYPE; }
+		// }else if(sym1.var.v.array){
+
+		// }
+	}
+	if(param1){
+		semanticError(PROTOTYPE_MORE_ARGS, &pro2);
+		return PROTOTYPE_MORE_ARGS;
+	}
+	if(param2){
+		semanticError(PROTOTYPE_FEWER_ARGS, &pro2);
+		return PROTOTYPE_FEWER_ARGS;
+	}
+	printf("%d:%d -- %d:%d\n", pro1.type.type, pro2.type.type, pro1.type.pointers, pro2.type.pointers);
+	if(pro1.type.type != pro2.type.type || pro1.type.pointers != pro2.type.pointers){
+		semanticError(CONFLICTING_TYPES, &pro2);
+		return CONFLICTING_TYPES;
+	}
+
+	return NO_ERROR;
+}
 int identifierInsert(HashTable symbol_table, Symbol* s){
 	Symbol *aux = getPrimeiroRegistro(symbol_table, s->id);
 	if(!aux){
 		insereRegistro(symbol_table, s->id, s);
-	}else{
+	}else if(s->symbol_type == DECLARACAO_VARIAVEL){
 		if(aux->type.type == s->type.type && aux->type.pointers == s->type.pointers){
-			if(s->symbol_type == DECLARACAO_VARIAVEL)
-				{ semanticError(REDECLARED_SYMBOL, s); }
-			else
-				{ semanticError(REDEFINED_SYMBOL, s); }
+			semanticError(REDECLARED_SYMBOL, s);
 		}else{
 			semanticError(REDEFINED_SYMBOL, s);
 		}
 		return 0;
+	}else if(s->symbol_type == DECLARACAO_FUNCAO){
+		if(aux->var.f.has_definition){
+			semanticError(REDEFINED_SYMBOL, s);
+			return 0;
+		}
+		if(matchPrototypes(*aux, *s) != NO_ERROR)
+			{ return 0; }
 	}
 
 	return 1;
@@ -772,6 +813,38 @@ void semanticError(enum error_list erro, void* element){
 			linhas = s->line;
 			colunas = s->column;
 			sprintf(error_msg, "parameter '%s' declared void", s->id);
+			break;
+		}
+		case ARGUMENT_DIFF_PROTOTYPE:
+		{
+			Symbol *s = element;
+			linhas = s->line;
+			colunas = s->column;
+			sprintf(error_msg, "argument '%s' does not match prototype", s->id);
+			break;
+		}
+		case PROTOTYPE_MORE_ARGS:
+		{
+			Symbol *s = element;
+			linhas = s->line;
+			colunas = s->column;
+			sprintf(error_msg, "prototype for '%s' declares more arguments", s->id);
+			break;
+		}
+		case PROTOTYPE_FEWER_ARGS:
+		{
+			Symbol *s = element;
+			linhas = s->line;
+			colunas = s->column;
+			sprintf(error_msg, "prototype for '%s' declares fewer arguments", s->id);
+			break;
+		}
+		case CONFLICTING_TYPES:
+		{
+			Symbol *s = element;
+			linhas = s->line;
+			colunas = s->column;
+			sprintf(error_msg, "conflicting types for '%s'", s->id);
 			break;
 		}
 		// default:
