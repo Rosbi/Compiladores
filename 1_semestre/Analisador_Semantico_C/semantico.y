@@ -34,6 +34,8 @@ HashTable Current_Symbol_Table = NULL;
 	struct array* array_union;
 	struct expression* expression_union;
 	struct parameters* parameters_union;
+	struct command_list* commands_union;
+	struct function_definition* func_def_union;
 }
 
 %type <string> STRING
@@ -67,8 +69,15 @@ HashTable Current_Symbol_Table = NULL;
 %type <expression_union> exp_postfix
 %type <expression_union> exp_postfix1
 %type <expression_union> exp_prim
+%type <expression_union> opt_exp
 %type <parameters_union> parametros
 %type <parameters_union> parametros1
+%type <commands_union> comandos
+%type <commands_union> lista_comandos
+%type <commands_union> else_exp
+%type <commands_union> bloco
+%type <commands_union> function_body
+%type <func_def_union> funcao
 
 /* declare tokens */
 %token VOID_T
@@ -215,7 +224,7 @@ funcao: function_header LCBRACK {
 			$1->var.f.has_definition = true;
 			Current_Symbol_Table = criaTabela(211);
 
-			struct function_definition func = { Current_Symbol_Table, NULL, $1->type, $1->var.f };
+			struct function_definition func = { Current_Symbol_Table, NULL, $1->type, $1->var.f, NULL };
 			func.name = malloc((strlen($1->id) + 1) * sizeof(char));
 			strcpy(func.name, $1->id);
 
@@ -236,6 +245,10 @@ funcao: function_header LCBRACK {
 				aux->next->next = NULL;
 			}
 		} function_body {
+			struct function_list *aux = Program_Table.head;
+			while(aux->next)
+				{ aux = aux->next; }
+			aux->function.commands_head = $4;
 			Current_Symbol_Table = Program_Table.Global_Symbol_Table;
 		}
 ;
@@ -248,7 +261,9 @@ function_header: tipo pointer IDENTIFIER parametros	{
 						$$ = aux;
 					}
 ;
-function_body: func_dec_var comandos RCBRACK {}
+function_body: func_dec_var comandos RCBRACK {
+					$$ = $2;
+				}
 ;
 func_dec_var: func_dec_var declaracao_var	{}
 			| /* epsilon */					{}
@@ -289,33 +304,54 @@ parametros1: tipo pointer IDENTIFIER array						{
 				}
 ;
 
-bloco: LCBRACK comandos RCBRACK	{}
+bloco: LCBRACK comandos RCBRACK	{
+			$$ = commandNew(COM_BLOCK, $2);
+		}
 ;
 
-comandos: lista_comandos comandos	{}
-		| lista_comandos			{}
+comandos: comandos lista_comandos	{
+				Command_list *aux;
+				for(aux=$1;aux->next;aux=aux->next);
+				aux->next = $2;
+				$$ = $1;
+			}
+		| lista_comandos			{ $$ = $1; }
 ;
 
-lista_comandos: DO_T bloco WHILE_T LPAREN expressao RPAREN SEMICOLON	{}
-			  | IF_T LPAREN expressao RPAREN bloco else_exp				{}
-			  | WHILE_T LPAREN expressao RPAREN bloco					{}
-			  | FOR_T LPAREN opt_exp SEMICOLON opt_exp SEMICOLON opt_exp RPAREN bloco	{}
+lista_comandos: DO_T bloco WHILE_T LPAREN expressao RPAREN SEMICOLON	{
+				  $$ = commandNew(COM_WHILE, $5, $2);
+			  }
+			  | IF_T LPAREN expressao RPAREN bloco else_exp				{
+				  $$ = commandNew(COM_IF, $3, $5, $6);
+			  }
+			  | WHILE_T LPAREN expressao RPAREN bloco					{
+				  $$ = commandNew(COM_WHILE, $3, $5);
+			  }
+			  | FOR_T LPAREN opt_exp SEMICOLON opt_exp SEMICOLON opt_exp RPAREN bloco	{
+				  $$ = commandNew(COM_FOR, $3, $5, $7, $9);
+			  }
 			  | PRINTF_T LPAREN STRING printf_exp RPAREN SEMICOLON		{}
 			  | SCANF_T LPAREN STRING COMMA AMPERSAND IDENTIFIER RPAREN SEMICOLON		{}
 			  | EXIT_T LPAREN expressao RPAREN SEMICOLON				{}
-			  | RETURN_T opt_exp SEMICOLON								{}
-			  | expressao SEMICOLON										{}
-			  | SEMICOLON												{}
-			  | bloco													{}
+			  | RETURN_T opt_exp SEMICOLON								{
+				  $$ = commandNew(COM_RETURN, $2);
+			  }
+			  | expressao SEMICOLON										{
+				  $$ = commandNew(COM_EXP, $1);
+			  }
+			  | SEMICOLON												{ $$ = NULL; }
+			  | bloco													{
+				  $$ = commandNew(COM_BLOCK, $1);
+			  }
 ;
 printf_exp: COMMA expressao	{}
 		  | /* epsilon */	{}
 ;
-else_exp: ELSE_T bloco		{}
-		| /* epsilon */		{}
+else_exp: ELSE_T bloco		{ $$ = $2; }
+		| /* epsilon */		{ $$ = NULL; }
 ;
-opt_exp: expressao		{}
-	   | /* epsilon */	{}
+opt_exp: expressao		{ $$ = $1; }
+	   | /* epsilon */	{ $$ = NULL;}
 ;
 
 expressao: exp_atr					{ $$ = $1; }
@@ -518,7 +554,6 @@ exp_prim: IDENTIFIER	{
 		}
 		| CHARACTER		{
 			union expression_union exp = { .chr = $1 };
-			printf("-- %c, %d\n", $1[1], $1[1]);
 			$$ = expressionNew(CHARACTER, exp, NULL, NULL, @1.first_line, @1.first_column);
 		}
 		| STRING		{
@@ -600,6 +635,7 @@ int main(int argc, char **argv){
 	for(struct function_list *aux=Program_Table.head;aux;aux=aux->next){
 		printf("\n%s Local Symbols:\n", aux->function.name);
 		HshTblMap(aux->function.Local_Symbol_Table, printSymbol);
+		printFunctionBody(aux->function.commands_head);
 	}
 	/*
 	//liberação de memória
@@ -638,7 +674,6 @@ int matchPrototypes(Symbol pro1, Symbol pro2){
 		semanticError(PROTOTYPE_FEWER_ARGS, &pro2);
 		return PROTOTYPE_FEWER_ARGS;
 	}
-	printf("%d:%d -- %d:%d\n", pro1.type.type, pro2.type.type, pro1.type.pointers, pro2.type.pointers);
 	if(pro1.type.type != pro2.type.type || pro1.type.pointers != pro2.type.pointers){
 		semanticError(CONFLICTING_TYPES, &pro2);
 		return CONFLICTING_TYPES;

@@ -7,6 +7,7 @@
 #include<stdarg.h>
 
 typedef struct symbol Symbol;
+typedef struct command_list Command_list;
 
 enum tipos {
     TIPOS_INT,
@@ -14,8 +15,13 @@ enum tipos {
     TIPOS_VOID,
     DECLARACAO_VARIAVEL,
     DECLARACAO_FUNCAO,
+    // COM_DO_WHILE,
     COM_IF,
-    COM_WHILE
+    COM_WHILE,
+    COM_FOR,
+    COM_RETURN,
+    COM_EXP,
+    COM_BLOCK,
     //...
 };
 
@@ -34,13 +40,38 @@ typedef struct expression{
     int line;
     int column;
 }Expression;
+struct while_t{
+    struct expression *exp;
+    struct command_list *commands;
+};
+struct if_else_t{
+    struct expression *exp;
+    struct command_list *then_com;
+    struct command_list *else_com;
+};
+struct for_t{
+    struct expression *exp_init;
+    struct expression *exp_check;
+    struct expression *exp_update;
+    struct command_list *commands;
+};
+// struct return_t{
+//     struct expression *exp_return;
+// }
 
 //struct genérica para cada comando
-struct command{
+struct command_list{
     int com_type;
     union{
-        Expression e;
+        Expression *exp_com;
+        struct if_else_t *if_com;
+        struct while_t *while_com;
+        struct for_t *for_com;
+        // struct return_t *return;
+        struct expression *return_com;
+        struct command_list *block;
     } com;
+    struct command_list *next;
 };
 
 //tipos de variáveis, incluindo ponteiros
@@ -61,6 +92,7 @@ struct variable{
         int i;
         char c;
     }value;
+    int arr_dimensions;
 };
 
 //possíveis informações de uma função
@@ -97,6 +129,7 @@ struct function_definition{
     char *name;
     struct var_type return_type;
     struct function_prototype f;
+    struct command_list *commands_head;
 };
 
 //struct principal do programa
@@ -109,9 +142,11 @@ struct{
 } Program_Table;
 
 void printSymbol(Symbol*);
+void printFunctionBody(Command_list*);
 
 Symbol* symbolNew(int symbol_type, char *id, struct var_type t, union symbol_union su, int line, int column);
 // struct parameters* parameterNew(char *id, struct var_type t, struct variable v, int line, int column, struct parameters *next);
+Command_list* commandNew(int command_type, ...);
 
 void freeSymbol(Symbol *);
 void freeParameters(struct parameters *p);

@@ -23,69 +23,69 @@ void RpnWalk(Expression *root){
     switch(root->node_type){
         // expressão atribuição
         case ASSIGN:
-            printf("%s ", root->node_value.sym->id);
+            printf("= ");
             break;
         case ADD_ASSIGN:
-            printf("%s ", root->node_value.sym->id);
+            printf("+= ");
             break;
         case SUB_ASSIGN:
-            printf("%s ", root->node_value.sym->id);
+            printf("-= ");
             break;
 
         // expressão condicional (_ ? _ : _)
 
         // expressão or
         case BIT_OR:
-            printf("%s ", root->node_value.sym->id);
+            printf("| ");
             break;
 
         // expressão or lógico
         case LOG_OR:
-            printf("%s ", root->node_value.sym->id);
+            printf("|| ");
             break;
 
         // expressão and lógico
         case LOG_AND:
-            printf("%s ", root->node_value.sym->id);
+            printf("&& ");
             break;
 
         // expressão xor
         case BIT_XOR:
-            printf("%s ", root->node_value.sym->id);
+            printf("^ ");
             break;
 
         // expressão and
         case BIT_AND:
-            printf("%s ", root->node_value.sym->id);
+            printf("& ");
             break;
         // expressão igualdade
         case EQUALS:
-            printf("%s ", root->node_value.sym->id);
+            printf("== ");
             break;
         case NOT_EQUALS:
-            printf("%s ", root->node_value.sym->id);
+            printf("!= ");
             break;
 
         // expressão relacional
         case LESS:
-            printf("%s ", root->node_value.sym->id);
+            printf("< ");
             break;
         case LEQ:
-            printf("%s ", root->node_value.sym->id);
+            printf("<= ");
             break;
         case GEQ:
-            printf("%s ", root->node_value.sym->id);
+            printf(">= ");
             break;
         case GREAT:
-            printf("%s ", root->node_value.sym->id);
+            printf("> ");
             break;
 
         // expressão shift
         case RSHIFT:
-            printf("%s ", root->node_value.sym->id);
+            printf(">> ");
             break;
         case LSHIFT:
-            printf("%s ", root->node_value.sym->id);
+            printf("<< ");
             break;
 
         // expressão aditiva
@@ -141,7 +141,7 @@ void RpnWalk(Expression *root){
             printf("%d ", root->node_value.num);
             break;
         case STRING:
-            printf("\"%s\" ", root->node_value.str);
+            printf("%s ", root->node_value.str);
             break;
         case CHARACTER:
             printf("%s ", root->node_value.chr);

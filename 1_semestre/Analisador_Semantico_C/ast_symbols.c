@@ -3,6 +3,8 @@
 #include<string.h>
 #include<stdlib.h>
 
+#include"commands.h" //tirar
+
 void printSymbol(Symbol *s){
     switch(s->symbol_type){
         case DECLARACAO_VARIAVEL:
@@ -62,6 +64,56 @@ void printSymbol(Symbol *s){
             break;
     }
 }
+void printFunctionBody(Command_list* commands){
+    if(!commands)
+        { return; }
+
+    switch(commands->com_type){
+        case COM_IF:
+            printf("if(");
+            RpnWalk(commands->com.if_com->exp);
+            printf(")");
+            printFunctionBody(commands->com.if_com->then_com);
+            printf("else");
+            printFunctionBody(commands->com.if_com->else_com);
+            break;
+        case COM_WHILE:
+            printf("while(");
+            RpnWalk(commands->com.while_com->exp);
+            printf(")");
+            printFunctionBody(commands->com.while_com->commands);
+            break;
+        case COM_FOR:
+            printf("for(");
+            RpnWalk(commands->com.for_com->exp_init);
+            printf(";");
+            RpnWalk(commands->com.for_com->exp_check);
+            printf(";");
+            RpnWalk(commands->com.for_com->exp_update);
+            printf(")");
+            printFunctionBody(commands->com.for_com->commands);
+            break;
+        case COM_RETURN:
+            printf("return ");
+            RpnWalk(commands->com.return_com);
+            printf(";\n");
+            break;
+        case COM_EXP:
+            RpnWalk(commands->com.exp_com);
+            printf("\n");
+            break;
+        case COM_BLOCK:
+            printf("{\n");
+            printFunctionBody(commands->com.block);
+            printf("}\n");
+            break;
+        default:
+            printf(" ++ shouldn't have come here ++ \n");
+            return;
+    }
+
+    printFunctionBody(commands->next);
+}
 
 Symbol* symbolNew(int symbol_type, char *id, struct var_type t, union symbol_union su, int line, int column){
     Symbol *aux = malloc(sizeof(Symbol));
@@ -88,6 +140,63 @@ Symbol* symbolNew(int symbol_type, char *id, struct var_type t, union symbol_uni
 
 //     return aux;
 // }
+
+Command_list* commandNew(int command_type, ...){
+    Command_list *com = malloc(sizeof(Command_list));
+    va_list args;
+    va_start(args, command_type);
+    com->com_type = command_type;
+
+    switch(command_type){
+        case COM_IF:
+        {
+            com->com.if_com = malloc(sizeof(struct if_else_t));
+
+            com->com.if_com->exp = va_arg(args, struct expression*);
+            com->com.if_com->then_com = va_arg(args, struct command_list*);
+            com->com.if_com->else_com = va_arg(args, struct command_list*);
+            break;
+        }
+        case COM_WHILE:
+        {
+            com->com.while_com = malloc(sizeof(struct while_t));
+
+            com->com.while_com->exp = va_arg(args, struct expression*);
+            com->com.while_com->commands = va_arg(args, struct command_list*);
+            break;
+        }
+        case COM_FOR:
+        {
+            com->com.for_com = malloc(sizeof(struct for_t));
+
+            com->com.for_com->exp_init = va_arg(args, struct expression*);
+            com->com.for_com->exp_check = va_arg(args, struct expression*);
+            com->com.for_com->exp_update = va_arg(args, struct expression*);
+            com->com.for_com->commands = va_arg(args, struct command_list*);
+            break;
+        }
+        case COM_RETURN:
+        {
+            com->com.return_com = va_arg(args, struct expression*);
+            break;
+        }
+        case COM_EXP:
+        {
+            com->com.exp_com = va_arg(args, struct expression*);
+            break;
+        }
+        case COM_BLOCK:
+        {
+            com->com.block = va_arg(args, struct command_list*);
+            break;
+        }
+    }
+
+    com->next = NULL;
+    va_end(args);
+
+    return com;
+}
 
 void freeSymbol(Symbol *s){
     if(!s) { return; }
