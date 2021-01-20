@@ -42,23 +42,22 @@ typedef enum error_list {
         //void value not ignored as it ought to be
         //subscripted value is neither array nor pointer
         //lvalue required as unary ’<operador-unario>’ operand
-        //invalid type argument of unary ’<operador-unario>’ (have ’<nome-do-tipo>’)
+    INVALID_UNR_OPERAND,
         //array subscript is not an integer
-        //comparison between ’<nome-do-tipo>’ and ’<nome-do-tipo>’ operator ’<operador-binario>’
+    WRONG_TYPE_COMPARISON,
         //cannot convert from ’<nome-do-tipo>’ to int
     STRING_ASSIGNMENT,
-    //STRING_ASSIGNMENT,
-        //incompatible types when assigning to type ’<nome-do-tipo>’ from type ’<nome-do-tipo>’
-        //invalid operands to binary ’<operador-binario>’ (have ’<nome-do-tipo>’ and ’<nome-do-tipo>’)
+    INCOMPATIBLE_ASSIGNMENT,
+    INVALID_BIN_OPERANDS,
         //wrong type argument to unary plus
         //wrong type argument to unary minus
 
-    //Warnings
     WARNINGS_START,
+    //Warnings
         //left shift count >= width of type
         //right shift count >= width of type
         //array index out of bounds
-        //comparison between ’<nome-do-tipo>’ and ’<nome-do-tipo>’ operator ’<operador-binario>’
+    WRONG_TYPE_COMPARISON_W,
         //cast from ’<nome-do-tipo>’ to ’<nome-do-tipo>’ of different size
         //’<nome-do-tipo>’/’<nome-do-tipo>’ type mismatch in conditional expression
 

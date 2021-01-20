@@ -7,6 +7,7 @@
 #include"hashTable.h"
 #include"commands.h"
 #include"errors.h"
+#include"types.h"
 
 extern int yylex();
 extern char* yytext;
@@ -645,9 +646,9 @@ int main(int argc, char **argv){
 	for(struct function_list *aux=Program_Table.head;aux;aux=aux->next){
 		HshTblMap(aux->function.Local_Symbol_Table, freeSymbol);
 	}
-	*/
-	hashtableFinalizar(Program_Table.Global_Symbol_Table);
 
+	hashtableFinalizar(Program_Table.Global_Symbol_Table);
+	*/
     return 0;
 }
 
@@ -884,7 +885,11 @@ void semanticError(enum error_list erro, void* element){
 			sprintf(error_msg, "conflicting types for '%s'", s->id);
 			break;
 		}
+		case NO_ERROR:
+			printf("problem in parsing, no semantic error passed to semantic error function");
+			return;
 		// default:
+		// 	printf("unknown error code in semantic error function");
 		// 	return;
 	}
 

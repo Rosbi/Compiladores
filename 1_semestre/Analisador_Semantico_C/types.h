@@ -1,10 +1,10 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#include"ast_symbols.h"
-#include"errors.h"
+struct var_type;
+typedef enum error_list Error_list;
 
-enum compatibility_enum {
+typedef enum types_compatibility {
     PLUS_COMP,
     MINUS_COMP,
     MUL_COMP,
@@ -15,7 +15,7 @@ enum compatibility_enum {
     BIT_XOR_COMP,
     LOG_AND_COMP,
     LOG_OR_COMP,
-    EUQAL_COMP,
+    EQUAL_COMP,
     DIFF_COMP,
     LESS_COMP,
     GREAT_COMP,
@@ -43,8 +43,17 @@ enum compatibility_enum {
     INT_COMP=0,
     CHAR_COMP,
     POINTER_COMP,
-};
+}Types_compatibility;
 
-Error_list matchTypes(int operation, struct var_type *var1, struct var_type *var2);
+typedef enum type_matching{
+    MATCH,
+    TYPE_MISSMATCH,
+    BASE_PTR_MISSMATCH,
+    PTR_MISSMATCH,
+    PTR_AND_NON_PTR,
+}Type_matching;
+
+Type_matching verifyTypes(struct var_type left_var, struct var_type right_var);
+Error_list matchTypes(int operation, struct var_type left_var, struct var_type right_var);
 
 #endif

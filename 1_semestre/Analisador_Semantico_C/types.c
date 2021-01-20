@@ -1,4 +1,6 @@
+#include"ast_symbols.h"
 #include"types.h"
+#include"errors.h"
 
 const int compatibility_table[29][6] = {
                             /*  INT/INT  CHAR/CHAR  INT/CHAR  PNT/INT  PNT/CHAR PNT/PNT  */
@@ -20,7 +22,7 @@ const int compatibility_table[29][6] = {
     /* GEQ_COMP          */ {      1,        1,        1,        3,       3,       3      },
     /* RSHIFT_COMP       */ {      1,        1,        1,        4,       4,       0      },
     /* LSHIFT_COMP       */ {      1,        1,        1,        4,       4,       0      },
-    /* ASSIGN_COMP       */ {      1,        1,        1,        1,       1,       5      },
+    /* ASSIGN_COMP       */ {      1,        1,        1,        0,       0,       5      },
     /* ADD_ASSIGN_COMP   */ {      1,        1,        1,        6,       6,       0      },
     /* SUB_ASSIGN_COMP   */ {      1,        1,        1,        6,       6,       0      },
                             /*    INT       CHAR      PNT                                 */
@@ -39,40 +41,67 @@ const int types_fusion[3][3] = {
     { POINTER_INT, POINTER_CHAR, POINTER_POINTER },
 };
 
-Error_list checkTypeMissmatch(int result_to_analyze, struct var_type *var1, struct var_type *var2, int var1_type, int var2_type){
+Type_matching verifyTypes(struct var_type var1, struct var_type var2){
+    Type_matching error = MATCH;
+
+    if(var1.pointers == var2.pointers && var1.type == var2.type){ //variáveis compatíveis
+        error = MATCH;
+    }else if(!var1.pointers != !var2.pointers){     //uma, e apenas uma, é ponteiro
+        error = PTR_AND_NON_PTR;
+    }else if(var1.pointers > 0){    // ambas são ponteiros
+        if(var1.pointers != var2.pointers){ // diferença de ponteiros
+            error = PTR_MISSMATCH;
+        }else if(var1.type != var2.type){ //diferença da base dos ponteiros
+            error = BASE_PTR_MISSMATCH;
+        }
+    }else{  //nenhuma é ponteiro, mas os tipos diferem
+        error = TYPE_MISSMATCH;
+    }
+
+    return error;
+}
+
+Error_list checkTypeMissmatch(int result_to_analyze, struct var_type var1, struct var_type var2, int var1_type, int var2_type){
     Error_list error = NO_ERROR;
+    Type_matching matching = verifyTypes(var1, var2);
+
     switch(result_to_analyze){
-        case 2: //pointer/(int/char) subtraction
-
-            break;
         case 3: //pointer/(int/char/pointer) comparison
-
-            break;
-        case 4: //pointer/(int/char) shift
-
+            if(matching == PTR_MISSMATCH){
+                error = WRONG_TYPE_COMPARISON;
+            }else if(matching == PTR_AND_NON_PTR){
+                error = WRONG_TYPE_COMPARISON_W;
+            }
             break;
         case 5: //pointer/pointer assignment
-
+            if(matching != MATCH){
+                error = INCOMPATIBLE_ASSIGNMENT;
+            }
             break;
+        case 2: //pointer/(int/char) subtraction
+        case 4: //pointer/(int/char) shift
         case 6: //pointer/(int/char) (add/sub)assign
-
+            if(var1.pointers == 0){ //se var esquerda é valor, e var direita é ponteiro
+                error = INVALID_BIN_OPERANDS;
+            }
             break;
     }
 
     return error;
 }
-Error_list matchTypes(int operation, struct var_type *var1, struct var_type *var2){
+
+Error_list matchTypes(int operation, struct var_type var1, struct var_type var2){
     int var1_type, var2_type, result;
-    if(var1->pointers)
+    if(var1.pointers)
         { var1_type = POINTER_COMP; }
-    else if(var1->type == TIPOS_INT)
+    else if(var1.type == TIPOS_INT)
         { var1_type = INT_COMP; }
     else
         { var1_type = CHAR_COMP; }
 
-    if(var2->pointers)
+    if(var2.pointers)
         { var2_type = POINTER_COMP; }
-    else if(var2->type == TIPOS_INT)
+    else if(var2.type == TIPOS_INT)
         { var2_type = INT_COMP; }
     else
         { var2_type = CHAR_COMP; }
@@ -83,7 +112,12 @@ Error_list matchTypes(int operation, struct var_type *var1, struct var_type *var
         result = compatibility_table[operation][types_fusion[var1_type][var2_type]];
     }
     switch(result){
-        case  0: return 0/*SOME_ERROR*/;
+        case  0:
+            if(operation >= UN_PLUS_COMP){
+                return INVALID_UNR_OPERAND;
+            }else{
+                return INVALID_BIN_OPERANDS;
+            }
         case  1: return NO_ERROR;
         default: return checkTypeMissmatch(result, var1, var2, var1_type, var2_type);
     }
