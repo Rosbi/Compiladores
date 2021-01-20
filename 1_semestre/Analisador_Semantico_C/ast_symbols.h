@@ -10,11 +10,16 @@ typedef struct symbol Symbol;
 typedef struct command_list Command_list;
 
 enum tipos {
+    //tipos de variável
     TIPOS_INT,
     TIPOS_CHAR,
     TIPOS_VOID,
+
+    //tipos de declaração
     DECLARACAO_VARIAVEL,
     DECLARACAO_FUNCAO,
+
+    //tipos de comandos
     // COM_DO_WHILE,
     COM_IF,
     COM_WHILE,
@@ -22,7 +27,6 @@ enum tipos {
     COM_RETURN,
     COM_EXP,
     COM_BLOCK,
-    //...
 };
 
 //representação rpn de uma expressão

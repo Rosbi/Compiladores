@@ -6,6 +6,8 @@
 #include"ast_symbols.h"
 #include"hashTable.h"
 #include"commands.h"
+#include"errors.h"
+
 extern int yylex();
 extern char* yytext;
 void yyerror(char *s);

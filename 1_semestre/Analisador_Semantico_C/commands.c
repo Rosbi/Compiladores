@@ -2,6 +2,7 @@
 #include<stdio.h>
 #include<math.h>
 #include"commands.h"
+#include"types.h"
 
 Expression* expressionNew(int node_t, union expression_union value, Expression *left, Expression *right, int line, int column){
     Expression *aux = malloc(sizeof(Expression));
@@ -317,6 +318,172 @@ Const_expr_state evaluateConstExpr(Expression *root){
                     state.error = INITIALIZER_NOT_CONST;
                 }
             }
+            break;
+    }
+    return state;
+}
+
+Exp_type_state evaluateExpressionType(Expression *root){
+    Exp_type_state state = { {0, 0}, NO_ERROR };
+    if(!root)
+        { return state; }
+
+    Exp_type_state no_l = evaluateExpressionType(root->left);
+    if(no_l.error != NO_ERROR)
+        { return no_l; }
+    Exp_type_state no_r = evaluateExpressionType(root->right);
+    if(no_r.error != NO_ERROR)
+        { return no_r; }
+
+    switch(root->node_type){
+        // expressão atribuição
+        case ASSIGN:
+        case ADD_ASSIGN:
+        case SUB_ASSIGN:
+            // if(no_l.exp->node_type == STRING || no_l.exp->node_type == CHARACTER){
+            //     state.error = STRING_ASSIGNMENT;
+            //     state.exp = no_l.exp;
+            // }else if(no_l.exp->node_type == IDENTIFIER){
+            //     state.error = CONST_IDENTIFIER_ASSIGNMENT;
+            //     state.exp = no_l.exp;
+            // }else{
+            //     state.error = RVALUE_ASSIGNMENT;
+            //     while(root=root->left, root!= NULL){
+            //         state.exp = root;
+            //     }
+            // }
+            break;
+
+        // expressão condicional (_ ? _ : _)
+        case CONDITIONAL_EXP:
+            // if(no_l.value){
+            //     no_r = evaluateConstExpr(no_r.exp->left);
+            // }else{
+            //     no_r = evaluateConstExpr(no_r.exp->right);
+            // }
+            // state.value = no_r.value;
+            break;
+
+        // expressão or lógico
+        case LOG_OR:
+            // state.value = no_l.value > no_r.value;
+            break;
+
+        // expressão and lógico
+        case LOG_AND:
+            // state.value = no_l.value && no_r.value;
+            break;
+
+        // expressão or
+        case BIT_OR:
+            // state.value = no_l.value | no_r.value;
+            break;
+
+        // expressão xor
+        case BIT_XOR:
+            // state.value = no_l.value ^ no_r.value;
+            break;
+
+        // expressão and
+        case BIT_AND:
+            // state.value = no_l.value & no_r.value;
+            break;
+        // expressão igualdade
+        case EQUALS:
+            // state.value = no_l.value == no_r.value;
+            break;
+        case NOT_EQUALS:
+            // state.value = no_l.value != no_r.value;
+            break;
+
+        // expressão relacional
+        case LESS:
+            // state.value = no_l.value < no_r.value;
+            break;
+        case LEQ:
+            // state.value = no_l.value <= no_r.value;
+            break;
+        case GEQ:
+            // state.value = no_l.value >= no_r.value;
+            break;
+        case GREAT:
+            // state.value = no_l.value > no_r.value;
+            break;
+
+        // expressão shift
+        case RSHIFT:
+            // state.value = no_l.value >> no_r.value;
+            break;
+        case LSHIFT:
+            // state.value = no_l.value << no_r.value;
+            break;
+
+        // expressão aditiva
+        case ADD:
+            // state.value = no_l.value + no_r.value;
+            break;
+        case SUB:
+            // state.value = no_l.value - no_r.value;
+            break;
+
+        // expressão multiplicativa
+        case MUL:
+            // state.value = no_l.value * no_r.value;
+            break;
+        case DIV:
+            // state.value = no_l.value / no_r.value;
+            break;
+        case MOD:
+            // state.value = no_l.value % no_r.value;
+            break;
+
+        // expressão unária
+        case ADDRESS:
+            // printf("%s ", root->node_value.sym->id);
+            break;
+        case POINTER_DEFERENCE:
+            // printf("%s ", root->node_value.sym->id);
+            break;
+        case UNR_PLUS:
+            // state.value = no_l.value;
+            break;
+        case UNR_MINUS:
+            // state.value = no_l.value * (-1);
+            break;
+        case BIT_NOT:
+            // state.value = ~no_l.value;
+            break;
+        case LOG_NOT:
+            // state.value = !no_l.value;
+            break;
+
+        // expressão pósfixa E unária
+        case INC:
+            // state.value = no_l.value + 1;
+            break;
+        case DEC:
+            // state.value = no_l.value - 1;
+            break;
+
+
+        // expressão primária
+        case NUM_INT:
+            // state.value = root->node_value.num;
+            break;
+        case STRING:
+            // printf("\"%s\" ", root->node_value.str);
+            break;
+        case CHARACTER:
+            // state.value = root->node_value.chr[1];
+            break;
+        case IDENTIFIER:
+            // if(root->node_value.sym->symbol_type == DECLARACAO_VARIAVEL){
+            //     if(root->node_value.sym->var.v.constant){
+            //         state.value = root->node_value.sym->var.v.value.i;
+            //     }else{
+            //         state.error = INITIALIZER_NOT_CONST;
+            //     }
+            // }
             break;
     }
     return state;
