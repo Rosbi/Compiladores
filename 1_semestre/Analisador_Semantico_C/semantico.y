@@ -186,7 +186,7 @@ declaracoes:
 
 			   Symbol *aux = symbolNew(DECLARACAO_VARIAVEL, $3, t, u, @3.first_line, @3.first_column);
 			   Const_expr_state state = evaluateConstExpr($4);
-			   if(state.error != NO_ERROR){
+			   if(state.error != NO_ERROR || state.error > WARNINGS_START){
 				   semanticError(state.error, state.exp);
 				   YYABORT;
 			   }else{
@@ -328,6 +328,12 @@ lista_comandos: DO_T bloco WHILE_T LPAREN expressao RPAREN SEMICOLON	{
 				  $$ = commandNew(COM_IF, $3, $5, $6);
 			  }
 			  | WHILE_T LPAREN expressao RPAREN bloco					{
+				  Exp_type_state state = { NULL, NO_ERROR, $3 };
+				  state = evaluateExpressionType(state);
+				  if(state.error != NO_ERROR && state.error < WARNINGS_START){
+					  semanticError(state.error, state.exp);
+					  YYABORT;
+				  }
 				  $$ = commandNew(COM_WHILE, $3, $5);
 			  }
 			  | FOR_T LPAREN opt_exp SEMICOLON opt_exp SEMICOLON opt_exp RPAREN bloco	{
@@ -582,7 +588,7 @@ pointer: ASTERISK pointer	{ $$ = $2 + 1; }
 array: LBRACK expressao RBRACK array	{
 			struct array *aux = malloc(sizeof(struct array));
 			Const_expr_state state = evaluateConstExpr($2);
-			if(state.error != NO_ERROR){
+			if(state.error != NO_ERROR || state.error > WARNINGS_START){
 				semanticError(state.error, state.exp);
 				YYABORT;
 			}else{
@@ -883,6 +889,30 @@ void semanticError(enum error_list erro, void* element){
 			linhas = s->line;
 			colunas = s->column;
 			sprintf(error_msg, "conflicting types for '%s'", s->id);
+			break;
+		}
+		case RVALUE_INC_OPERAND:
+		{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "lvalue required as increment operand");
+			break;
+		}
+		case RVALUE_DEC_OPERAND:
+		{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "lvalue required as decrement operand");
+			break;
+		}
+		case INVALID_UNR_OPERAND:
+		{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "invalid type argument of unary '%s' (have '%s')", getOperator(exp->node_type), getType(exp->left->exp_type));
 			break;
 		}
 		case NO_ERROR:

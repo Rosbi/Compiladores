@@ -29,6 +29,13 @@ enum tipos {
     COM_BLOCK,
 };
 
+//tipos de variáveis, incluindo ponteiros
+struct var_type{
+    int type;
+    int pointers;
+    bool constant;
+};
+
 //representação rpn de uma expressão
 typedef struct expression{
     struct expression *left;
@@ -40,6 +47,7 @@ typedef struct expression{
         char *str;
         Symbol *sym;
     } node_value;
+    struct var_type exp_type;
 
     int line;
     int column;
@@ -76,12 +84,6 @@ struct command_list{
         struct command_list *block;
     } com;
     struct command_list *next;
-};
-
-//tipos de variáveis, incluindo ponteiros
-struct var_type{
-    int type;
-    int pointers;
 };
 
 //possíveis informações de uma variável

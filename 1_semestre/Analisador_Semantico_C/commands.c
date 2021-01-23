@@ -1,5 +1,6 @@
 #include<stdlib.h>
 #include<stdio.h>
+#include<string.h>
 #include<math.h>
 #include"commands.h"
 #include"types.h"
@@ -110,22 +111,22 @@ void RpnWalk(Expression *root){
 
         // expressão unária
         case ADDRESS:
-            printf("%s ", root->node_value.sym->id);
+            printf("& ");
             break;
         case POINTER_DEFERENCE:
-            printf("%s ", root->node_value.sym->id);
+            printf("* ");
             break;
         case UNR_PLUS:
-            printf("%s ", root->node_value.sym->id);
+            printf("+ ");
             break;
         case UNR_MINUS:
-            printf("%s ", root->node_value.sym->id);
+            printf("- ");
             break;
         case BIT_NOT:
-            printf("%s ", root->node_value.sym->id);
+            printf("~ ");
             break;
         case LOG_NOT:
-            printf("%s ", root->node_value.sym->id);
+            printf("! ");
             break;
 
         // expressão pósfixa E unária
@@ -323,35 +324,53 @@ Const_expr_state evaluateConstExpr(Expression *root){
     return state;
 }
 
-Exp_type_state evaluateExpressionType(Expression *root){
-    Exp_type_state state = { {0, 0}, NO_ERROR };
-    if(!root)
-        { return state; }
+struct warnings* mergeWarningsLists(struct warnings *w_left, struct warnings *w_right){
+    struct warnings *aux;
+    if(!w_left)
+        { return w_right; }
 
-    Exp_type_state no_l = evaluateExpressionType(root->left);
+    for(aux=w_left;aux->next;aux=aux->next);
+
+    aux->next = w_right;
+    return aux;
+}
+struct warnings* warningInsert(struct warnings* list, Error_list warning){
+    struct warnings *aux = list;
+    if(!aux){
+        aux = malloc(sizeof(struct warnings));
+    }else{
+        for(;aux->next;aux=aux->next);
+        aux->next = malloc(sizeof(struct warnings));
+        aux = aux->next;
+    }
+
+    aux->warning = warning;
+    aux->next = NULL;
+
+    return aux;
+}
+
+Exp_type_state evaluateExpressionType(Exp_type_state root){
+    Exp_type_state state = { NULL, NO_ERROR, NULL };
+    if(!root.exp)
+        { return state; }
+    
+    Exp_type_state no_l = { NULL, NO_ERROR, root.exp->left };
+    evaluateExpressionType(no_l);
     if(no_l.error != NO_ERROR)
         { return no_l; }
-    Exp_type_state no_r = evaluateExpressionType(root->right);
+    Exp_type_state no_r = { NULL, NO_ERROR, root.exp->right };
+    no_r = evaluateExpressionType(no_r);
     if(no_r.error != NO_ERROR)
         { return no_r; }
+    state.exp = root.exp;
 
-    switch(root->node_type){
+    switch(root.exp->node_type){
         // expressão atribuição
         case ASSIGN:
         case ADD_ASSIGN:
         case SUB_ASSIGN:
-            // if(no_l.exp->node_type == STRING || no_l.exp->node_type == CHARACTER){
-            //     state.error = STRING_ASSIGNMENT;
-            //     state.exp = no_l.exp;
-            // }else if(no_l.exp->node_type == IDENTIFIER){
-            //     state.error = CONST_IDENTIFIER_ASSIGNMENT;
-            //     state.exp = no_l.exp;
-            // }else{
-            //     state.error = RVALUE_ASSIGNMENT;
-            //     while(root=root->left, root!= NULL){
-            //         state.exp = root;
-            //     }
-            // }
+            
             break;
 
         // expressão condicional (_ ? _ : _)
@@ -362,6 +381,8 @@ Exp_type_state evaluateExpressionType(Expression *root){
             //     no_r = evaluateConstExpr(no_r.exp->right);
             // }
             // state.value = no_r.value;
+            break;
+        case CONDITIONAL_EXP_THENELSE:
             break;
 
         // expressão or lógico
@@ -442,51 +463,177 @@ Exp_type_state evaluateExpressionType(Expression *root){
             // printf("%s ", root->node_value.sym->id);
             break;
         case POINTER_DEFERENCE:
-            // printf("%s ", root->node_value.sym->id);
+            state.error = matchTypes(UN_DEFERENCE_COMP, state.exp->left->exp_type, state.exp->exp_type);
+            if(state.error != NO_ERROR)
+                { return state; }
+            if(state.exp->left->exp_type.pointers == 0){
+                state.error = INVALID_UNR_OPERAND;
+            }else{
+                state.exp->exp_type = state.exp->left->exp_type;
+                state.exp->exp_type.pointers--;
+            }
             break;
         case UNR_PLUS:
-            // state.value = no_l.value;
+            state.error = matchTypes(UN_PLUS_COMP, state.exp->left->exp_type, state.exp->exp_type);
+            if(state.error != NO_ERROR)
+                { return state; }
+            state.exp->exp_type = state.exp->left->exp_type;
             break;
         case UNR_MINUS:
-            // state.value = no_l.value * (-1);
+            state.error = matchTypes(UN_MINUS_COMP, state.exp->left->exp_type, state.exp->exp_type);
+            if(state.error != NO_ERROR)
+                { return state; }
+            state.exp->exp_type = state.exp->left->exp_type;
             break;
         case BIT_NOT:
-            // state.value = ~no_l.value;
+            state.error = matchTypes(UN_BIT_NOT_COMP, state.exp->left->exp_type, state.exp->exp_type);
+            if(state.error != NO_ERROR)
+                { return state; }
+            state.exp->exp_type.constant = true;
+            state.exp->exp_type.pointers = 0;
+            state.exp->exp_type.type     = TIPOS_INT;
             break;
         case LOG_NOT:
-            // state.value = !no_l.value;
+            state.error = matchTypes(UN_LOG_NOT_COMP, state.exp->left->exp_type, state.exp->exp_type);
+            if(state.error != NO_ERROR)
+                { return state; }
+            state.exp->exp_type.constant = true;
+            state.exp->exp_type.pointers = 0;
+            state.exp->exp_type.type     = TIPOS_INT;
             break;
 
         // expressão pósfixa E unária
         case INC:
-            // state.value = no_l.value + 1;
+            state.error = matchTypes(UN_INC_COMP, state.exp->left->exp_type, state.exp->exp_type);
+            if(state.error != NO_ERROR)
+                { return state; }
+            if(state.exp->left->exp_type.constant){
+                state.error = RVALUE_INC_OPERAND;
+            }else{
+                state.exp->exp_type = state.exp->left->exp_type;
+            }
             break;
         case DEC:
+            state.error = matchTypes(UN_DEC_COMP, state.exp->left->exp_type, state.exp->exp_type);
+            if(state.error != NO_ERROR)
+                { return state; }
+            if(state.exp->left->exp_type.constant){
+                state.error = RVALUE_DEC_OPERAND;
+            }else{
+                state.exp->exp_type = state.exp->left->exp_type;
+            }
             // state.value = no_l.value - 1;
             break;
 
-
         // expressão primária
         case NUM_INT:
-            // state.value = root->node_value.num;
+            state.exp->exp_type.type     = TIPOS_INT;
+            state.exp->exp_type.pointers = 0;
+            state.exp->exp_type.constant = true;
             break;
         case STRING:
-            // printf("\"%s\" ", root->node_value.str);
+            state.exp->exp_type.type     = TIPOS_CHAR;
+            state.exp->exp_type.pointers = 1;
+            state.exp->exp_type.constant = true;
             break;
         case CHARACTER:
-            // state.value = root->node_value.chr[1];
+            state.exp->exp_type.type     = TIPOS_CHAR;
+            state.exp->exp_type.pointers = 0;
+            state.exp->exp_type.constant = true;
             break;
         case IDENTIFIER:
-            // if(root->node_value.sym->symbol_type == DECLARACAO_VARIAVEL){
-            //     if(root->node_value.sym->var.v.constant){
-            //         state.value = root->node_value.sym->var.v.value.i;
-            //     }else{
-            //         state.error = INITIALIZER_NOT_CONST;
-            //     }
-            // }
+            state.exp->exp_type = state.exp->node_value.sym->type;
+            if(state.exp->node_value.sym->symbol_type == DECLARACAO_VARIAVEL && state.exp->node_value.sym->var.v.constant){
+                state.exp->exp_type.constant = true;
+            }else{
+                state.exp->exp_type.constant = false;
+            }
             break;
     }
+
+    if(state.warnings_list){
+        state.warnings_list->next = no_r.warnings_list;
+    }else{
+        state.warnings_list = no_r.warnings_list;
+    }
+    state.warnings_list = mergeWarningsLists(no_l.warnings_list, state.warnings_list);
+
     return state;
+}
+
+const char* getOperator(int operator){
+    switch(operator){
+        // expressão atribuição
+        case ASSIGN:     return  "=";
+        case ADD_ASSIGN: return "+=";
+        case SUB_ASSIGN: return "-=";
+
+        // expressão condicional (_ ? _ : _)
+        case CONDITIONAL_EXP:          return "?";
+        case CONDITIONAL_EXP_THENELSE: return ":";
+
+        // expressão or lógico
+        case LOG_OR: return "||";
+
+        // expressão and lógico
+        case LOG_AND: return "&&";
+
+        // expressão or
+        case BIT_OR: return "|";
+
+        // expressão xor
+        case BIT_XOR: return "^";
+
+        // expressão and
+        case BIT_AND: return "&";
+
+        // expressão igualdade
+        case EQUALS:     return "==";
+        case NOT_EQUALS: return "!=";
+
+        // expressão relacional
+        case LESS:  return  "<";
+        case LEQ:   return "<=";
+        case GEQ:   return ">=";
+        case GREAT: return  ">";
+
+        // expressão shift
+        case RSHIFT: return ">>";
+        case LSHIFT: return "<<";
+
+        // expressão aditiva
+        case ADD: return "+";
+        case SUB: return "-";
+
+        // expressão multiplicativa
+        case MUL: return "*";
+        case DIV: return "/";
+        case MOD: return "%%";
+
+        // expressão unária
+        case ADDRESS:           return "&";
+        case POINTER_DEFERENCE: return "*";
+        case UNR_PLUS:          return "+";
+        case UNR_MINUS:         return "-";
+        case BIT_NOT:           return "~";
+        case LOG_NOT:           return "!";
+
+        // expressão pósfixa E unária
+        case INC: return "++";
+        case DEC: return "--";
+        default: return "OPERATOR NOT FOUND";
+    }
+}
+char* getType(struct var_type type){
+    char *str = malloc((5 + type.pointers) * sizeof(char));
+    switch(type.type){
+        case TIPOS_INT:  strcpy(str, "int");  break;
+        case TIPOS_CHAR: strcpy(str, "char"); break;
+        case TIPOS_VOID: strcpy(str, "void"); break;
+    }
+    for(int i=0;i<type.pointers;i++)
+        { strcat(str, "*"); }
+    return str;
 }
 
 void deleteTree(Expression *root){

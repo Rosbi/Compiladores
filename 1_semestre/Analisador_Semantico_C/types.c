@@ -2,8 +2,13 @@
 #include"types.h"
 #include"errors.h"
 
+const int TIPOS_POINTER_SIZE = 32;
+const int TIPOS_INT_SIZE     = 32;
+const int TIPOS_CHAR_SIZE    =  8;
+const int TIPOS_VOID_SIZE    =  8;
+
 const int compatibility_table[29][6] = {
-                            /*  INT/INT  CHAR/CHAR  INT/CHAR  PNT/INT  PNT/CHAR PNT/PNT  */
+                            /*  INT/INT  CHAR/CHAR  INT/CHAR  PNT/INT  PNT/CHAR PNT/PNT   */
     /* PLUS_COMP         */ {      1,        1,        1,        1,       1,       0      },
     /* MINUS_COMP        */ {      1,        1,        1,        2,       2,       0      },
     /* MUL_COMP          */ {      1,        1,        1,        0,       0,       0      },
@@ -25,7 +30,7 @@ const int compatibility_table[29][6] = {
     /* ASSIGN_COMP       */ {      1,        1,        1,        0,       0,       5      },
     /* ADD_ASSIGN_COMP   */ {      1,        1,        1,        6,       6,       0      },
     /* SUB_ASSIGN_COMP   */ {      1,        1,        1,        6,       6,       0      },
-                            /*    INT       CHAR      PNT                                 */
+                            /*    INT       CHAR      PNT        --       --       -      */
     /* UN_PLUS_COMP      */ {      1,        1,        0,        0,       0,       0      },
     /* UN_MINUS_COMP     */ {      1,        1,        0,        0,       0,       0      },
     /* UN_DEFERENCE_COMP */ {      0,        0,        1,        0,       0,       0      },

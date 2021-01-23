@@ -4,6 +4,11 @@
 struct var_type;
 typedef enum error_list Error_list;
 
+extern const int TIPOS_POINTER_SIZE;
+extern const int TIPOS_INT_SIZE;
+extern const int TIPOS_CHAR_SIZE;
+extern const int TIPOS_VOID_SIZE;
+
 typedef enum types_compatibility {
     PLUS_COMP,
     MINUS_COMP,

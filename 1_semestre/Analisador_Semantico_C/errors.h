@@ -32,7 +32,8 @@ typedef enum error_list {
 
     /* Erros na verificação de tipos em ocmandos/expressões */
     //UNDECLARED_SYMBOL
-        //lvalue required as increment operand
+    RVALUE_INC_OPERAND,
+    RVALUE_DEC_OPERAND,
     RVALUE_ASSIGNMENT,
     INITIALIZER_NOT_CONST,
         //right shift count is negative
@@ -72,7 +73,10 @@ typedef struct const_expr_state{
 }Const_expr_state;
 
 typedef struct exp_type_state{
-    struct var_type type;
+    struct warnings{
+        Error_list warning;
+        struct warnings *next;
+    } *warnings_list;
     Error_list error;
     Expression *exp;
 }Exp_type_state;

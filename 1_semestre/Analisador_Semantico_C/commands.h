@@ -10,6 +10,10 @@ Expression* expressionNew(int node_t, union expression_union value, Expression* 
 
 void RpnWalk(Expression*);
 Const_expr_state evaluateConstExpr(Expression *root);
+Exp_type_state evaluateExpressionType(Exp_type_state root);
+
+const char* getOperator(int operator);
+char* getType(struct var_type type);
 
 void deleteTree(Expression*);
 
