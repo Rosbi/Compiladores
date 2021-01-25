@@ -36,8 +36,8 @@ typedef enum error_list {
     RVALUE_DEC_OPERAND,
     RVALUE_ASSIGNMENT,
     INITIALIZER_NOT_CONST,
-        //right shift count is negative
-        //left shift count is negative
+    RSHIFT_NEGATIVE,
+    LSHIFT_NEGATIVE,
     STRING_DEFINE,
     DIVISION_BY_ZERO,
         //void value not ignored as it ought to be
@@ -55,12 +55,12 @@ typedef enum error_list {
 
     WARNINGS_START,
     //Warnings
-        //left shift count >= width of type
-        //right shift count >= width of type
+    LSHIFT_EXCEEDS_SIZE_W,
+    RSHIFT_EXCEEDS_SIZE_W,
         //array index out of bounds
     WRONG_TYPE_COMPARISON_W,
         //cast from ’<nome-do-tipo>’ to ’<nome-do-tipo>’ of different size
-        //’<nome-do-tipo>’/’<nome-do-tipo>’ type mismatch in conditional expression
+    CONDITIONAL_TYPE_MISSMATCH_W,
 
     //Outros erros
     CONST_IDENTIFIER_ASSIGNMENT,

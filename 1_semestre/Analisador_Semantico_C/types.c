@@ -27,9 +27,9 @@ const int compatibility_table[29][6] = {
     /* GEQ_COMP          */ {      1,        1,        1,        3,       3,       3      },
     /* RSHIFT_COMP       */ {      1,        1,        1,        4,       4,       0      },
     /* LSHIFT_COMP       */ {      1,        1,        1,        4,       4,       0      },
-    /* ASSIGN_COMP       */ {      1,        1,        1,        0,       0,       5      },
-    /* ADD_ASSIGN_COMP   */ {      1,        1,        1,        6,       6,       0      },
-    /* SUB_ASSIGN_COMP   */ {      1,        1,        1,        6,       6,       0      },
+    /* ASSIGN_COMP       */ {      1,        1,        1,        7,       7,       5      },
+    /* ADD_ASSIGN_COMP   */ {      1,        1,        1,        6,       6,       7      },
+    /* SUB_ASSIGN_COMP   */ {      1,        1,        1,        6,       6,       7      },
                             /*    INT       CHAR      PNT        --       --       -      */
     /* UN_PLUS_COMP      */ {      1,        1,        0,        0,       0,       0      },
     /* UN_MINUS_COMP     */ {      1,        1,        0,        0,       0,       0      },
@@ -72,7 +72,7 @@ Error_list checkTypeMissmatch(int result_to_analyze, struct var_type var1, struc
 
     switch(result_to_analyze){
         case 3: //pointer/(int/char/pointer) comparison
-            if(matching == PTR_MISSMATCH){
+            if(matching == PTR_MISSMATCH || matching == BASE_PTR_MISSMATCH){
                 error = WRONG_TYPE_COMPARISON;
             }else if(matching == PTR_AND_NON_PTR){
                 error = WRONG_TYPE_COMPARISON_W;
@@ -85,11 +85,16 @@ Error_list checkTypeMissmatch(int result_to_analyze, struct var_type var1, struc
             break;
         case 2: //pointer/(int/char) subtraction
         case 4: //pointer/(int/char) shift
-        case 6: //pointer/(int/char) (add/sub)assign
             if(var1.pointers == 0){ //se var esquerda é valor, e var direita é ponteiro
                 error = INVALID_BIN_OPERANDS;
             }
             break;
+        case 6: //pointer/(int/char) (add/sub)assign
+            if(var1.pointers == 0){ //se var esquerda é valor, e var direita é ponteiro
+                error = INCOMPATIBLE_ASSIGNMENT;
+            }
+            break;
+        case 7: error = INCOMPATIBLE_ASSIGNMENT; break;
     }
 
     return error;

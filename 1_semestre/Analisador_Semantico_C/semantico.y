@@ -753,16 +753,14 @@ void semanticError(enum error_list erro, void* element){
 	char error_msg[150];
 
 	switch(erro){
-		case UNDECLARED_SYMBOL:
-		{
+		case UNDECLARED_SYMBOL:{
 			Symbol *s = element;
 			linhas = s->line;
 			colunas = s->column;
 			sprintf(error_msg, "'%s' undeclared", s->id);
 			break;
 		}
-		case REDECLARED_SYMBOL:
-		{
+		case REDECLARED_SYMBOL:{
 			Symbol *s = element;
 			linhas = s->line;
 			colunas = s->column;
@@ -770,8 +768,7 @@ void semanticError(enum error_list erro, void* element){
 			sprintf(error_msg, "variable '%s' already declared, previous declaration in line %d column %d", s->id, aux->line, aux->column);
 			break;
 		}
-		case REDEFINED_SYMBOL:
-		{
+		case REDEFINED_SYMBOL:{
 			Symbol *s = element;
 			linhas = s->line;
 			colunas = s->column;
@@ -779,140 +776,162 @@ void semanticError(enum error_list erro, void* element){
 			sprintf(error_msg, "redefinition of '%s' previous defined in line %d column %d", s->id, aux->line, aux->column);
 			break;
 		}
-		case VARIABLE_DECLARED_VOID:
-		{
+		case VARIABLE_DECLARED_VOID:{
 			Symbol *s = element;
 			linhas = s->line;
 			colunas = s->column;
 			sprintf(error_msg, "variable '%s' declared void", s->id);
 			break;
 		}
-		case DIVISION_BY_ZERO:
-		{
+		case DIVISION_BY_ZERO:{
 			Expression *exp = element;
 			linhas = exp->line;
 			colunas = exp->column;
 			sprintf(error_msg, "division by zero");
 			break;
 		}
-		case INITIALIZER_NOT_CONST:
-		{
+		case INITIALIZER_NOT_CONST:{
 			Expression *exp = element;
 			linhas = exp->line;
 			colunas = exp->column;
 			sprintf(error_msg, "'%s' initializer element is not constant", exp->node_value.sym->id);
 			break;
 		}
-		case STRING_DEFINE:
-		{
+		case STRING_DEFINE:{
 			Expression *exp = element;
 			linhas = exp->line;
 			colunas = exp->column;
 			sprintf(error_msg, "string type is not compatible with define");
 			break;
 		}
-		case STRING_ASSIGNMENT:
-		{
+		case STRING_ASSIGNMENT:{
 			Expression *exp = element;
 			linhas = exp->line;
 			colunas = exp->column;
 			sprintf(error_msg, "assignment of read-only location %s", exp->node_value.str);
 			break;
 		}
-		case CONST_IDENTIFIER_ASSIGNMENT:
-		{
+		case CONST_IDENTIFIER_ASSIGNMENT:{
 			Expression *exp = element;
 			linhas = exp->line;
 			colunas = exp->column;
 			sprintf(error_msg, "assignment of read-only identifier \"%s\"", exp->node_value.sym->id);
 			break;
 		}
-		case RVALUE_ASSIGNMENT:
-		{
+		case RVALUE_ASSIGNMENT:{
 			Expression *exp = element;
 			linhas = exp->line;
 			colunas = exp->column;
 			sprintf(error_msg, "lvalue required as left operand of assignment");
 			break;
 		}
-		case ARR_NEGATIVE_INITIALIZER:
-		{
+		case ARR_NEGATIVE_INITIALIZER:{
 			Symbol *s = element;
 			linhas = s->line;
 			colunas = s->column;
 			sprintf(error_msg, "size of array '%s' is negative", s->id);
 			break;
 		}
-		case ARR_ZERO_INITIALIZER:
-		{
+		case ARR_ZERO_INITIALIZER:{
 			Symbol *s = element;
 			linhas = s->line;
 			colunas = s->column;
 			sprintf(error_msg, "size of array '%s' is zero", s->id);
 			break;
 		}
-		case PARAMETER_DECLARED_VOID:
-		{
+		case PARAMETER_DECLARED_VOID:{
 			Symbol *s = element;
 			linhas = s->line;
 			colunas = s->column;
 			sprintf(error_msg, "parameter '%s' declared void", s->id);
 			break;
 		}
-		case ARGUMENT_DIFF_PROTOTYPE:
-		{
+		case ARGUMENT_DIFF_PROTOTYPE:{
 			Symbol *s = element;
 			linhas = s->line;
 			colunas = s->column;
 			sprintf(error_msg, "argument '%s' does not match prototype", s->id);
 			break;
 		}
-		case PROTOTYPE_MORE_ARGS:
-		{
+		case PROTOTYPE_MORE_ARGS:{
 			Symbol *s = element;
 			linhas = s->line;
 			colunas = s->column;
 			sprintf(error_msg, "prototype for '%s' declares more arguments", s->id);
 			break;
 		}
-		case PROTOTYPE_FEWER_ARGS:
-		{
+		case PROTOTYPE_FEWER_ARGS:{
 			Symbol *s = element;
 			linhas = s->line;
 			colunas = s->column;
 			sprintf(error_msg, "prototype for '%s' declares fewer arguments", s->id);
 			break;
 		}
-		case CONFLICTING_TYPES:
-		{
+		case CONFLICTING_TYPES:{
 			Symbol *s = element;
 			linhas = s->line;
 			colunas = s->column;
 			sprintf(error_msg, "conflicting types for '%s'", s->id);
 			break;
 		}
-		case RVALUE_INC_OPERAND:
-		{
+		case RVALUE_INC_OPERAND:{
 			Expression *exp = element;
 			linhas = exp->line;
 			colunas = exp->column;
 			sprintf(error_msg, "lvalue required as increment operand");
 			break;
 		}
-		case RVALUE_DEC_OPERAND:
-		{
+		case RVALUE_DEC_OPERAND:{
 			Expression *exp = element;
 			linhas = exp->line;
 			colunas = exp->column;
 			sprintf(error_msg, "lvalue required as decrement operand");
 			break;
 		}
-		case INVALID_UNR_OPERAND:
-		{
+		case INVALID_UNR_OPERAND:{
 			Expression *exp = element;
 			linhas = exp->line;
 			colunas = exp->column;
-			sprintf(error_msg, "invalid type argument of unary '%s' (have '%s')", getOperator(exp->node_type), getType(exp->left->exp_type));
+			sprintf(error_msg, "invalid type argument of unary '%s' (have '%s')",
+				getOperator(exp->node_type), getType(exp->left->exp_type));
+			break;
+		}
+		case WRONG_TYPE_COMPARISON:{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "comparison between '%s' and '%s' operator '%s'",
+				getType(exp->left->exp_type), getType(exp->right->exp_type), getOperator(exp->node_type));
+			break;
+		}
+		case INCOMPATIBLE_ASSIGNMENT:{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "incompatible types when assigning to type ’%s’ from type ’%s’",
+				getType(exp->left->exp_type), getType(exp->right->exp_type));
+			break;
+		}
+		case INVALID_BIN_OPERANDS:{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "invalid operands to binary ’%s’ (have ’%s’ and ’%s’)",
+				getOperator(exp->node_type), getType(exp->left->exp_type), getType(exp->right->exp_type));
+			break;
+		}
+		case RSHIFT_NEGATIVE:{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "right shift count is negative");
+			break;
+		}
+		case LSHIFT_NEGATIVE:{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "left shift count is negative");
 			break;
 		}
 		case NO_ERROR:
