@@ -75,6 +75,7 @@ typedef struct const_expr_state{
 typedef struct exp_type_state{
     struct warnings{
         Error_list warning;
+        Expression *exp;
         struct warnings *next;
     } *warnings_list;
     Error_list error;

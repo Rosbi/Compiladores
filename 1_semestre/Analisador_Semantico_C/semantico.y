@@ -330,6 +330,8 @@ lista_comandos: DO_T bloco WHILE_T LPAREN expressao RPAREN SEMICOLON	{
 			  | WHILE_T LPAREN expressao RPAREN bloco					{
 				  Exp_type_state state = { NULL, NO_ERROR, $3 };
 				  state = evaluateExpressionType(state);
+				  printWarnings(state.warnings_list, in_file);
+				  free(state.warnings_list);
 				  if(state.error != NO_ERROR && state.error < WARNINGS_START){
 					  semanticError(state.error, state.exp);
 					  YYABORT;
@@ -954,6 +956,8 @@ void semanticError(enum error_list erro, void* element){
 void printLine(FILE* in, int n){
 	int i=1;
 	char c;
+
+	int starting_point = ftell(in);
 	fseek(in, 0, SEEK_SET);
 
 	while(i < n){
@@ -970,4 +974,5 @@ void printLine(FILE* in, int n){
 		c = fgetc(in);
 	}
 	printf("\n");
+	fseek(in, starting_point, SEEK_SET);
 }

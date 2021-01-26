@@ -7,7 +7,7 @@ PROGRAMA = semantico
 LEXICO = lexico.l
 SEMANTICO = semantico.y
 
-$(PROGRAMA): $(LEXICO) $(SEMANTICO) 
+$(PROGRAMA): $(LEXICO) $(SEMANTICO)
 	$(BISON) -d $(SEMANTICO)
 	$(FLEX) $(LEXICO)
 	$(CC) -c *.c -I. $(FLAGS)
