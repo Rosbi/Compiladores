@@ -90,7 +90,8 @@ struct command_list{
 struct variable{
     struct array{
         int length;
-        // Expression *exp;
+        int dimension;
+        Expression *exp;
         struct array *next;
     } *array;
     bool constant;

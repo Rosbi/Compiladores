@@ -7,6 +7,9 @@
 
 void printLine(FILE* file, int linha);
 
+enum type_sizes { SAME_SIZE, LEFT_BIGGER, RIGHT_BIGGER };
+int compareTypesSize(struct var_type v1, struct var_type v2);
+
 Expression* expressionNew(int node_t, union expression_union value, Expression *left, Expression *right, int line, int column){
     Expression *aux = malloc(sizeof(Expression));
     aux->left = left;
@@ -348,7 +351,23 @@ void printWarnings(struct warnings* warnings_list, FILE* lines_file){
             case RSHIFT_EXCEEDS_SIZE_W:
                 sprintf(warning_msg, "right shift count >= width of type");
                 break;
+            case INDEX_OUT_OF_BOUNDS:
+                sprintf(warning_msg, "array index out of bounds");
+                break;
+            case WRONG_TYPE_COMPARISON_W:
+                sprintf(warning_msg, "comparison between '%s' and '%s' operator '%s'",
+                    getType(aux->exp->left->exp_type), getType(aux->exp->right->exp_type), getOperator(aux->exp->node_type));
+                break;
+            case CONDITIONAL_TYPE_MISSMATCH_W:
+                sprintf(warning_msg, "'%s'/'%s' type missmatch in conditional expression",
+                    getType(aux->exp->left->exp_type), getType(aux->exp->right->exp_type));
+                break;
+            case DIFFERENT_CAST_SIZE_W:
+                sprintf(warning_msg, "cast from ’%s’ to ’%s’ of different size",
+                    getType(aux->exp->left->exp_type), getType(aux->exp->exp_type));
+                break;
             default:
+                sprintf(warning_msg, "algo deu errado ao imprimir essa warning");
                 break;
         }
         coluna = aux->exp->column;
@@ -403,7 +422,7 @@ void freeWarningList(struct warnings *warnings_list){
 }
 
 Exp_type_state evaluateExpressionType(Exp_type_state root){
-    Exp_type_state state = { NULL, NO_ERROR, NULL };
+    Exp_type_state state = { NULL, NO_ERROR, root.exp };
     if(!root.exp)
         { return state; }
 
@@ -422,10 +441,10 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
         case ASSIGN: case ADD_ASSIGN: case SUB_ASSIGN:{
             if(state.exp->node_type == STRING || state.exp->node_type == CHARACTER){
                 state.error = STRING_ASSIGNMENT;
-                return state;
+                break;
             }else if(state.exp->left->exp_type.constant){
                 state.error = RVALUE_ASSIGNMENT;
-                return state;
+                break;
             }
             switch(root.exp->node_type){
                 case ASSIGN:     state.error = matchTypes(ASSIGN_COMP,     state.exp->left->exp_type, state.exp->right->exp_type); break;
@@ -433,7 +452,7 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
                 case SUB_ASSIGN: state.error = matchTypes(SUB_ASSIGN_COMP, state.exp->left->exp_type, state.exp->right->exp_type); break;
             }
             if(state.error != NO_ERROR && state.error < WARNINGS_START){
-                return state;
+                break;
             }else if(state.error > WARNINGS_START){
                 state.warnings_list = warningInsert(state.warnings_list, state.error, state.exp);
             }
@@ -490,7 +509,7 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
                     break;
             }
             if(state.error != NO_ERROR && state.error < WARNINGS_START){
-                return state;
+                break;
             }else if(state.error > WARNINGS_START){
                 state.warnings_list = warningInsert(state.warnings_list, state.error, state.exp);
             }
@@ -523,7 +542,7 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
                     break;
             }
             if(state.error != NO_ERROR && state.error < WARNINGS_START){
-                return state;
+                break;
             }else if(state.error > WARNINGS_START){
                 state.warnings_list = warningInsert(state.warnings_list, state.error, state.exp);
             }
@@ -549,7 +568,7 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
                     break;
             }
             if(state.error != NO_ERROR && state.error < WARNINGS_START){
-                return state;
+                break;
             }else if(state.error > WARNINGS_START){
                 state.warnings_list = warningInsert(state.warnings_list, state.error, state.exp);
             }
@@ -570,55 +589,13 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
                     }
                 }else if(right_value.value < 0){
                     state.error = negative_shift_error;
-                    return state;
+                    break;
                 }
             }
             state.exp->exp_type = state.exp->left->exp_type;
             state.exp->exp_type.constant = true;
             break;
         }
-/*
-        // expressão shift
-        case RSHIFT:{
-            state.error = matchTypes(RSHIFT_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-            if(state.error != NO_ERROR && state.error < WARNINGS_START){
-                return state;
-            }else if(state.error > WARNINGS_START){
-                state.warnings_list = warningInsert(state.warnings_list, state.error);
-            }
-            Const_expr_state right_value = evaluateConstExpr(state.exp->right);
-            if((state.exp->right->exp_type.pointers > 0 && right_value.value >= TIPOS_POINTER_SIZE)
-                || (state.exp->right->exp_type.type == TIPOS_INT && right_value.value >= TIPOS_INT_SIZE)
-                || (state.exp->right->exp_type.type == TIPOS_CHAR && right_value.value >= TIPOS_CHAR_SIZE)){
-                    state.warnings_list = warningInsert(state.warnings_list, RSHIFT_EXCEEDS_SIZE_W);
-                }else if(right_value.value < 0){
-                    state.error = RSHIFT_NEGATIVE;
-                    return state;
-                }
-            state.exp->exp_type = state.exp->left->exp_type;
-            state.exp->exp_type.constant = true;
-            break;
-        }
-        case LSHIFT:{
-            state.error = matchTypes(LSHIFT_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-            if(state.error != NO_ERROR && state.error < WARNINGS_START)
-                { return state; }
-            Const_expr_state right_value = evaluateConstExpr(state.exp->right);
-            if(right_value.error ==  NO_ERROR){
-                if((state.exp->right->exp_type.pointers > 0 && right_value.value >= TIPOS_POINTER_SIZE)
-                || (state.exp->right->exp_type.type == TIPOS_INT && right_value.value >= TIPOS_INT_SIZE)
-                || (state.exp->right->exp_type.type == TIPOS_CHAR && right_value.value >= TIPOS_CHAR_SIZE)){
-                    state.warnings_list = warningInsert(state.warnings_list, LSHIFT_EXCEEDS_SIZE_W);
-                }else if(right_value.value < 0){
-                    state.error = LSHIFT_NEGATIVE;
-                    return state;
-                }
-            }
-            state.exp->exp_type = state.exp->left->exp_type;
-            state.exp->exp_type.constant = true;
-            break;
-        }
-*/
 
         case ADD: case SUB:           // expressão aditiva
         case MUL: case DIV: case MOD:{ // expressão multiplicativa
@@ -630,14 +607,14 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
                     Const_expr_state div_result = evaluateConstExpr(state.exp->right);
                     if(div_result.error ==  NO_ERROR && div_result.value == 0){
                         state.error = DIVISION_BY_ZERO;
-                        return state;
+                        break;
                     }
                     break;
                 case MOD: state.error = matchTypes(REMAINDER_COMP, state.exp->left->exp_type, state.exp->right->exp_type); break;
             }
 
             if(state.error != NO_ERROR && state.error < WARNINGS_START){
-                return state;
+                break;
             }else if(state.error > WARNINGS_START){
                 state.warnings_list = warningInsert(state.warnings_list, state.error, state.exp);
             }
@@ -654,90 +631,18 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
             break;
         }
 
-        // expressão aditiva
-        // case ADD:
-        //     state.error = matchTypes(PLUS_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-        //     if(state.error != NO_ERROR && state.error < WARNINGS_START){
-        //         return state;
-        //     }else if(state.error > WARNINGS_START){
-        //         state.warnings_list = warningInsert(state.warnings_list, state.error);
-        //     }
-        //     if(verifyTypes(state.exp->left->exp_type, state.exp->right->exp_type) == MATCH){
-        //         if(state.exp->left->exp_type.type == TIPOS_CHAR){
-        //             state.exp->exp_type.type = TIPOS_CHAR;
-        //         }
-        //     }else{
-        //         state.exp->exp_type.type = TIPOS_INT;
-        //     }
-        //     state.exp->exp_type.pointers = 0;
-        //     state.exp->exp_type.constant = true;
-        //     break;
-        // case SUB:
-        //     state.error = matchTypes(MINUS_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-        //     if(state.error != NO_ERROR && state.error < WARNINGS_START)
-        //         { return state; }
-        //     if(verifyTypes(state.exp->left->exp_type, state.exp->right->exp_type) == MATCH
-        //     && state.exp->left->exp_type.type == TIPOS_CHAR){
-        //         state.exp->exp_type.type = TIPOS_CHAR;
-        //     }else{
-        //         state.exp->exp_type.type = TIPOS_INT;
-        //     }
-        //     state.exp->exp_type.pointers = 0;
-        //     state.exp->exp_type.constant = true;
-        //     break;
-
-        // // expressão multiplicativa
-        // case MUL:
-        //     state.error = matchTypes(MUL_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-        //     if(state.error != NO_ERROR && state.error < WARNINGS_START)
-        //         { return state; }
-        //     if(verifyTypes(state.exp->left->exp_type, state.exp->right->exp_type) == MATCH
-        //     && state.exp->left->exp_type.type == TIPOS_CHAR){
-        //         state.exp->exp_type.type = TIPOS_CHAR;
-        //     }else{
-        //         state.exp->exp_type.type = TIPOS_INT;
-        //     }
-        //     state.exp->exp_type.pointers = 0;
-        //     state.exp->exp_type.constant = true;
-        //     break;
-        // case DIV:{
-        //     state.error = matchTypes(DIV_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-        //     if(state.error != NO_ERROR && state.error < WARNINGS_START)
-        //         { return state; }
-        //     Const_expr_state div_result = evaluateConstExpr(state.exp->right);
-        //     if(div_result.error ==  NO_ERROR && div_result.value == 0){
-        //         state.error = DIVISION_BY_ZERO;
-        //         return state;
-        //     }
-        //     if(verifyTypes(state.exp->left->exp_type, state.exp->right->exp_type) == MATCH
-        //     && state.exp->left->exp_type.type == TIPOS_CHAR){
-        //         state.exp->exp_type.type = TIPOS_CHAR;
-        //     }else{
-        //         state.exp->exp_type.type = TIPOS_INT;
-        //     }
-        //     state.exp->exp_type.pointers = 0;
-        //     state.exp->exp_type.constant = true;
-        //     break;
-        // }
-        // case MOD:
-        //     state.error = matchTypes(REMAINDER_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-        //     if(state.error != NO_ERROR && state.error < WARNINGS_START)
-        //         { return state; }
-        //     if(verifyTypes(state.exp->left->exp_type, state.exp->right->exp_type) == MATCH
-        //     && state.exp->left->exp_type.type == TIPOS_CHAR){
-        //         state.exp->exp_type.type = TIPOS_CHAR;
-        //     }else{
-        //         state.exp->exp_type.type = TIPOS_INT;
-        //     }
-        //     state.exp->exp_type.pointers = 0;
-        //     state.exp->exp_type.constant = true;
-        //     break;
+        case CAST:{
+            if(compareTypesSize(state.exp->exp_type, state.exp->left->exp_type) == RIGHT_BIGGER){
+                state.warnings_list = warningInsert(state.warnings_list, DIFFERENT_CAST_SIZE_W, state.exp);
+            }
+            break;
+        }
 
         // expressão unária
         case ADDRESS:{
             state.error = matchTypes(UN_ADDRESS_COMP, state.exp->left->exp_type, state.exp->exp_type);
             if(state.error != NO_ERROR && state.error < WARNINGS_START)
-                { return state; }
+                { break; }
             state.exp->exp_type.type = state.exp->left->exp_type.type;
             state.exp->exp_type.pointers = state.exp->left->exp_type.pointers + 1;
             state.exp->exp_type.constant = true;
@@ -746,10 +651,10 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
         case POINTER_DEFERENCE:{
             state.error = matchTypes(UN_DEFERENCE_COMP, state.exp->left->exp_type, state.exp->exp_type);
             if(state.error != NO_ERROR && state.error < WARNINGS_START)
-                { return state; }
+                { break; }
             if(state.exp->left->exp_type.pointers == 0){
                 state.error = INVALID_UNR_OPERAND;
-                return state;
+                break;
             }else{
                 state.exp->exp_type = state.exp->left->exp_type;
                 state.exp->exp_type.pointers = state.exp->left->exp_type.pointers - 1;
@@ -760,7 +665,7 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
         case UNR_PLUS:{
             state.error = matchTypes(UN_PLUS_COMP, state.exp->left->exp_type, state.exp->exp_type);
             if(state.error != NO_ERROR && state.error < WARNINGS_START)
-                { return state; }
+                { break; }
             state.exp->exp_type = state.exp->left->exp_type;
             state.exp->exp_type.constant = true;
             break;
@@ -768,7 +673,7 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
         case UNR_MINUS:{
             state.error = matchTypes(UN_MINUS_COMP, state.exp->left->exp_type, state.exp->exp_type);
             if(state.error != NO_ERROR && state.error < WARNINGS_START)
-                { return state; }
+                { break; }
             state.exp->exp_type = state.exp->left->exp_type;
             state.exp->exp_type.constant = true;
             break;
@@ -776,7 +681,7 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
         case BIT_NOT:{
             state.error = matchTypes(UN_BIT_NOT_COMP, state.exp->left->exp_type, state.exp->exp_type);
             if(state.error != NO_ERROR && state.error < WARNINGS_START)
-                { return state; }
+                { break; }
             state.exp->exp_type.constant = true;
             state.exp->exp_type.pointers = 0;
             state.exp->exp_type.type     = TIPOS_INT;
@@ -785,7 +690,7 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
         case LOG_NOT:{
             state.error = matchTypes(UN_LOG_NOT_COMP, state.exp->left->exp_type, state.exp->exp_type);
             if(state.error != NO_ERROR && state.error < WARNINGS_START)
-                { return state; }
+                { break; }
             state.exp->exp_type.constant = true;
             state.exp->exp_type.pointers = 0;
             state.exp->exp_type.type     = TIPOS_INT;
@@ -796,10 +701,10 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
         case INC:{
             state.error = matchTypes(UN_INC_COMP, state.exp->left->exp_type, state.exp->exp_type);
             if(state.error != NO_ERROR && state.error < WARNINGS_START)
-                { return state; }
+                { break; }
             if(state.exp->left->exp_type.constant){
                 state.error = RVALUE_INC_OPERAND;
-                return state;
+                break;
             }else{
                 state.exp->exp_type = state.exp->left->exp_type;
                 state.exp->exp_type.constant = true;
@@ -809,17 +714,49 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
         case DEC:{
             state.error = matchTypes(UN_DEC_COMP, state.exp->left->exp_type, state.exp->exp_type);
             if(state.error != NO_ERROR && state.error < WARNINGS_START)
-                { return state; }
+                { break; }
             if(state.exp->left->exp_type.constant){
                 state.error = RVALUE_DEC_OPERAND;
-                return state;
+                break;
             }else{
                 state.exp->exp_type = state.exp->left->exp_type;
                 state.exp->exp_type.constant = true;
             }
             break;
         }
+        case SUBSCRIPT:{
+            if(no_l.exp->node_type == IDENTIFIER && no_l.exp->node_value.sym->symbol_type == DECLARACAO_VARIAVEL){
+                state.exp->exp_type = no_l.exp->exp_type;
+                // if(no_l.exp->node_value.sym->var.v.array){
+                //     state.exp->exp_type.pointers += no_l.exp->node_value.sym->var.v.array->dimension;
+                // }
+            }else if(no_l.exp->node_type == SUBSCRIPT){
+                state.exp->exp_type = no_l.exp->exp_type;
+            }else{
+                state.error = INVALID_SUBSCRIPTOR;
+                break;
+            }
+            if(no_r.exp->exp_type.pointers > 0){
+                state.error = IMPOSSIBLE_INT_CONVERSION;
+                state.exp->exp_type = no_r.exp->exp_type;
+                break;
+            }
 
+            if(state.exp->exp_type.pointers == 0){
+                state.error = INVALID_SUBSCRIPTOR;
+                break;
+            }
+            state.exp->exp_type.pointers--;
+
+            Const_expr_state index = evaluateConstExpr(no_r.exp);
+            if(index.error == NO_ERROR){
+                if(index.value < 0){
+                    state.warnings_list = warningInsert(state.warnings_list, INDEX_OUT_OF_BOUNDS, state.exp);
+                }
+            }
+            break;
+        }
+        
         // expressão primária
         case NUM_INT:{
             state.exp->exp_type.type     = TIPOS_INT;
@@ -841,20 +778,20 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
         }
         case IDENTIFIER:{
             state.exp->exp_type = state.exp->node_value.sym->type;
-            if(state.exp->node_value.sym->symbol_type == DECLARACAO_VARIAVEL && state.exp->node_value.sym->var.v.constant){
+            if(state.exp->node_value.sym->symbol_type == DECLARACAO_FUNCAO){
+                state.exp->exp_type.constant = true;
+            }else if(state.exp->node_value.sym->var.v.constant){
                 state.exp->exp_type.constant = true;
             }else{
                 state.exp->exp_type.constant = false;
+                if(state.exp->node_value.sym->var.v.array){
+                    state.exp->exp_type.pointers += state.exp->node_value.sym->var.v.array->dimension;
+                }
             }
             break;
         }
     }
 
-    // if(state.warnings_list){
-    //     state.warnings_list = mergeWarningsLists(state.wa)
-    // }else{
-    //     state.warnings_list = no_r.warnings_list;
-    // }
     state.warnings_list = mergeWarningsLists(state.warnings_list, no_r.warnings_list);
     state.warnings_list = mergeWarningsLists(no_l.warnings_list, state.warnings_list);
 
@@ -946,4 +883,22 @@ void deleteTree(Expression *root){
     deleteTree(root->left);
     deleteTree(root->right);
     free(root);
+}
+
+int compareTypesSize(struct var_type v1, struct var_type v2){
+    if(!v1.pointers != !v2.pointers){
+        if(v1.pointers > 0){
+            return LEFT_BIGGER;
+        }else{
+            return RIGHT_BIGGER;
+        }
+    }else if(v1.type != v2.type){
+        if(v1.type == TIPOS_INT){
+            return LEFT_BIGGER;
+        }else{
+            return RIGHT_BIGGER;
+        }
+    }else{
+        return SAME_SIZE;
+    }
 }

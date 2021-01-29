@@ -41,12 +41,12 @@ typedef enum error_list {
     STRING_DEFINE,
     DIVISION_BY_ZERO,
         //void value not ignored as it ought to be
-        //subscripted value is neither array nor pointer
+    INVALID_SUBSCRIPTOR,
         //lvalue required as unary ’<operador-unario>’ operand
     INVALID_UNR_OPERAND,
         //array subscript is not an integer
     WRONG_TYPE_COMPARISON,
-        //cannot convert from ’<nome-do-tipo>’ to int
+    IMPOSSIBLE_INT_CONVERSION,
     STRING_ASSIGNMENT,
     INCOMPATIBLE_ASSIGNMENT,
     INVALID_BIN_OPERANDS,
@@ -57,9 +57,9 @@ typedef enum error_list {
     //Warnings
     LSHIFT_EXCEEDS_SIZE_W,
     RSHIFT_EXCEEDS_SIZE_W,
-        //array index out of bounds
+    INDEX_OUT_OF_BOUNDS,
     WRONG_TYPE_COMPARISON_W,
-        //cast from ’<nome-do-tipo>’ to ’<nome-do-tipo>’ of different size
+    DIFFERENT_CAST_SIZE_W,
     CONDITIONAL_TYPE_MISSMATCH_W,
 
     //Outros erros

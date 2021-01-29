@@ -153,6 +153,8 @@ HashTable Current_Symbol_Table = NULL;
 %token UNR_MINUS
 %token CONDITIONAL_EXP
 %token CONDITIONAL_EXP_THENELSE
+%token SUBSCRIPT
+%token CAST
 
 	/* unused tokens */
 %token BREAK_T
@@ -393,109 +395,114 @@ exp_cond: exp_log_or										{ $$ = $1; }
 ;
 
 exp_log_or: exp_log_and						{ $$ = $1; }
-		  | exp_log_and LOG_OR exp_log_or	{
+		  | exp_log_or LOG_OR exp_log_and	{
 			union expression_union u;
 			$$ = expressionNew(LOG_OR, u, $1, $3, @2.first_line, @2.first_column);
 		  }
 ;
 
 exp_log_and: exp_or						{ $$ = $1; }
-		   | exp_or LOG_AND exp_log_and	{
+		   | exp_log_and LOG_AND exp_or	{
 				union expression_union u;
 				$$ = expressionNew(LOG_AND, u, $1, $3, @2.first_line, @2.first_column);
 		   }
 ;
 
 exp_or: exp_xor					{ $$ = $1; }
-	  | exp_xor BIT_OR exp_or	{
+	  | exp_or BIT_OR exp_xor	{
 		   union expression_union u;
 		   $$ = expressionNew(BIT_OR, u, $1, $3, @2.first_line, @2.first_column);
 	  }
 ;
 
 exp_xor: exp_and					{ $$ = $1; }
-	   | exp_and BIT_XOR exp_xor	{
+	   | exp_xor BIT_XOR exp_and	{
 		   union expression_union u;
 		   $$ = expressionNew(BIT_XOR, u, $1, $3, @2.first_line, @2.first_column);
 	   }
 ;
 
 exp_and: exp_equal					{ $$ = $1; }
-	   | exp_equal AMPERSAND exp_and	{
+	   | exp_and AMPERSAND exp_equal	{
 		   union expression_union u;
 		   $$ = expressionNew(BIT_AND, u, $1, $3, @2.first_line, @2.first_column);
 	   }
 ;
 
 exp_equal: exp_relat						{ $$ = $1; }
-		 | exp_relat EQUALS exp_equal		{
+		 | exp_equal EQUALS exp_relat		{
 			union expression_union u;
 			$$ = expressionNew(EQUALS, u, $1, $3, @2.first_line, @2.first_column);
 		 }
-		 | exp_relat NOT_EQUALS exp_equal	{
+		 | exp_equal NOT_EQUALS exp_relat	{
 			union expression_union u;
 			$$ = expressionNew(NOT_EQUALS, u, $1, $3, @2.first_line, @2.first_column);
 		 }
 ;
 
 exp_relat: exp_shift					{ $$ = $1; }
-		 | exp_shift LESS exp_relat		{
+		 | exp_relat LESS exp_shift		{
 		   union expression_union u;
 		   $$ = expressionNew(LESS, u, $1, $3, @2.first_line, @2.first_column);
 		 }
-		 | exp_shift LEQ exp_relat		{
+		 | exp_relat LEQ exp_shift		{
 		   union expression_union u;
 		   $$ = expressionNew(LEQ, u, $1, $3, @2.first_line, @2.first_column);
 		 }
-		 | exp_shift GEQ exp_relat		{
+		 | exp_relat GEQ exp_shift		{
 		   union expression_union u;
 		   $$ = expressionNew(GEQ, u, $1, $3, @2.first_line, @2.first_column);
 		 }
-		 | exp_shift GREAT exp_relat	{
+		 | exp_relat GREAT exp_shift	{
 		   union expression_union u;
 		   $$ = expressionNew(GREAT, u, $1, $3, @2.first_line, @2.first_column);
 		 }
 ;
 
 exp_shift: exp_add					{ $$ = $1; }
-		 | exp_add LSHIFT exp_shift	{
+		 | exp_shift LSHIFT exp_add	{
 			union expression_union u;
 			$$ = expressionNew(LSHIFT, u, $1, $3, @2.first_line, @2.first_column);
 		 }
-		 | exp_add RSHIFT exp_shift	{
+		 | exp_shift RSHIFT exp_add	{
 			union expression_union u;
 			$$ = expressionNew(RSHIFT, u, $1, $3, @2.first_line, @2.first_column);
 		 }
 ;
 
 exp_add: exp_mult				{ $$ = $1; }
-	   | exp_mult ADD exp_add	{
+	   | exp_add ADD exp_mult	{
 			union expression_union u;
 			$$ = expressionNew(ADD, u, $1, $3, @2.first_line, @2.first_column);
 	   }
-	   | exp_mult SUB exp_add	{
+	   | exp_add SUB exp_mult	{
 			union expression_union u;
 			$$ = expressionNew(SUB, u, $1, $3, @2.first_line, @2.first_column);
 	   }
 ;
 
 exp_mult: exp_cast						{ $$ = $1; }
-		| exp_cast ASTERISK exp_mult	{
+		| exp_mult ASTERISK exp_cast	{
 			union expression_union u;
 			$$ = expressionNew(MUL, u, $1, $3, @2.first_line, @2.first_column);
 		}
-		| exp_cast DIV exp_mult			{
+		| exp_mult DIV exp_cast			{
 			union expression_union u;
 			$$ = expressionNew(DIV, u, $1, $3, @2.first_line, @2.first_column);
 		}
-		| exp_cast MOD exp_mult			{
+		| exp_mult MOD exp_cast			{
 			union expression_union u;
 			$$ = expressionNew(MOD, u, $1, $3, @2.first_line, @2.first_column);
 		}
 ;
 
 exp_cast: exp_unary								{ $$ = $1; }
-		| LPAREN tipo pointer RPAREN exp_cast	{}
+		| LPAREN tipo pointer RPAREN exp_cast	{
+			union expression_union u;
+			$$ = expressionNew(CAST, u, $5, NULL, @1.first_line, @1.first_column);
+			struct var_type v = { .type=$2, .pointers=$3, .constant=true };
+			$$->exp_type = v;
+		}
 ;
 
 exp_unary: exp_postfix			{ $$ = $1; }
@@ -542,7 +549,10 @@ exp_postfix: exp_prim				{ $$ = $1; }
 				union expression_union u;
 				$$ = expressionNew(DEC, u, $1, NULL, @2.first_line, @2.first_column);
 		   }
-		   | exp_postfix LBRACK expressao RBRACK			{}
+		   | exp_postfix LBRACK expressao RBRACK			{
+			   union expression_union u;
+			   $$ = expressionNew(SUBSCRIPT, u, $1, $3, @2.first_line, @2.first_column);
+		   }
 		   | exp_postfix LPAREN RPAREN						{}
 		   | exp_postfix LPAREN exp_postfix1 RPAREN	{}
 ;
@@ -593,10 +603,15 @@ array: LBRACK expressao RBRACK array	{
 			if(state.error != NO_ERROR || state.error > WARNINGS_START){
 				semanticError(state.error, state.exp);
 				YYABORT;
+			}
+			
+			aux->exp = $2;
+			aux->length = state.value;
+			aux->next = $4;
+			if(aux->next){
+				aux->dimension = aux->next->dimension + 1;
 			}else{
-				// aux->exp = $2;
-				aux->length = state.value;
-				aux->next = $4;
+				aux->dimension = 1;
 			}
 
 			$$ = aux;
@@ -640,7 +655,7 @@ int main(int argc, char **argv){
 	in_file = stdin;
 	yyparse();
 
-	//printa as tabelas
+	// printa as tabelas
 	printf("\nGlobal Symbols:\n");
 	HshTblMap(Program_Table.Global_Symbol_Table, printSymbol);
 	for(struct function_list *aux=Program_Table.head;aux;aux=aux->next){
@@ -766,7 +781,7 @@ void semanticError(enum error_list erro, void* element){
 			Symbol *s = element;
 			linhas = s->line;
 			colunas = s->column;
-			Symbol *aux = identifierLookup(Program_Table.Global_Symbol_Table, s);
+			Symbol *aux = identifierLookup(Current_Symbol_Table, s);
 			sprintf(error_msg, "variable '%s' already declared, previous declaration in line %d column %d", s->id, aux->line, aux->column);
 			break;
 		}
@@ -774,7 +789,7 @@ void semanticError(enum error_list erro, void* element){
 			Symbol *s = element;
 			linhas = s->line;
 			colunas = s->column;
-			Symbol *aux = identifierLookup(Program_Table.Global_Symbol_Table, s);
+			Symbol *aux = identifierLookup(Current_Symbol_Table, s);
 			sprintf(error_msg, "redefinition of '%s' previous defined in line %d column %d", s->id, aux->line, aux->column);
 			break;
 		}
@@ -934,6 +949,20 @@ void semanticError(enum error_list erro, void* element){
 			linhas = exp->line;
 			colunas = exp->column;
 			sprintf(error_msg, "left shift count is negative");
+			break;
+		}
+		case INVALID_SUBSCRIPTOR:{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "subscripted value is neither array nor pointer");
+			break;
+		}
+		case IMPOSSIBLE_INT_CONVERSION:{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "cannot convert from ’%s’ to int", getType(exp->exp_type));
 			break;
 		}
 		case NO_ERROR:
