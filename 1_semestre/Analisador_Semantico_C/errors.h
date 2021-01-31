@@ -18,11 +18,11 @@ typedef enum error_list {
         //incompatible types in initialization when assigning to type ’<nome-do-tipo>’ from type ’<nome-do-tipo>’
 
     /* Erros em chamadas de função */
-        //called object ’<nome-do-identificador>’ is not a function or function pointer
+    OBJECT_NOT_A_FUNCTION,
 	UNDECLARED_SYMBOL,
-        //too few arguments to function ’<nome-da-funcao>’
-        //too many arguments to function ’<nome-da-funcao>’
-        //incompatible type for argument ’<numero-do-argumento>’ of ’<nome-da-funcao>’ expected ’<nome-do-tipo>’ but argument is of type ’<nome-do-tipo>’
+    TOO_FEW_ARGUMENTS,
+    TOO_MANY_ARGUMENTS,
+    INCOMPATIBLE_ARGUMENT_TYPE,
 
     /* Erros em retorno de funcao */
         //no return statement in function returning non-void
@@ -64,6 +64,7 @@ typedef enum error_list {
 
     //Outros erros
     CONST_IDENTIFIER_ASSIGNMENT,
+    IDENTIFIER_NOT_A_FUNCTION,
 }Error_list;
 
 typedef struct const_expr_state{
@@ -81,5 +82,14 @@ typedef struct exp_type_state{
     Error_list error;
     Expression *exp;
 }Exp_type_state;
+
+typedef struct func_type_state{
+    Error_list error;
+    Expression *func;
+    char *func_name;
+    int wrong_arg;
+    struct var_type expected_type;
+    struct var_type received_type;
+}Func_type_state;
 
 #endif

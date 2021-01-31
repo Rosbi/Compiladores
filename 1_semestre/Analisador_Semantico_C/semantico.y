@@ -155,6 +155,8 @@ HashTable Current_Symbol_Table = NULL;
 %token CONDITIONAL_EXP_THENELSE
 %token SUBSCRIPT
 %token CAST
+%token FUNCTION_CALL
+%token COMMA_SEPARATOR
 
 	/* unused tokens */
 %token BREAK_T
@@ -330,10 +332,7 @@ lista_comandos: DO_T bloco WHILE_T LPAREN expressao RPAREN SEMICOLON	{
 				  $$ = commandNew(COM_IF, $3, $5, $6);
 			  }
 			  | WHILE_T LPAREN expressao RPAREN bloco					{
-				  Exp_type_state state = { NULL, NO_ERROR, $3 };
-				  state = evaluateExpressionType(state);
-				  printWarnings(state.warnings_list, in_file);
-				  free(state.warnings_list);
+				  Exp_type_state state = evalExpTypeAndHandleWarnings($3, in_file);
 				  if(state.error != NO_ERROR && state.error < WARNINGS_START){
 					  semanticError(state.error, state.exp);
 					  YYABORT;
@@ -553,11 +552,71 @@ exp_postfix: exp_prim				{ $$ = $1; }
 			   union expression_union u;
 			   $$ = expressionNew(SUBSCRIPT, u, $1, $3, @2.first_line, @2.first_column);
 		   }
-		   | exp_postfix LPAREN RPAREN						{}
-		   | exp_postfix LPAREN exp_postfix1 RPAREN	{}
+		   | exp_postfix LPAREN RPAREN				{
+			   Expression *aux = $1;
+			   // lida com erros e warnings em $1
+			   Exp_type_state state = evalExpTypeAndHandleWarnings(aux, in_file);
+			   if(state.error != 0 && state.error < WARNINGS_START){
+				   semanticError(state.error, state.exp);
+				   YYABORT;
+			   }
+			   // verifica se o objeto é uma função
+			   for(;aux->left;aux=aux->left);
+			   if(aux->node_type == IDENTIFIER){
+				   if(aux->node_value.sym->symbol_type == DECLARACAO_FUNCAO){
+					   Func_type_state f_state = matchFunctionCall(aux, NULL, in_file);
+					   if(f_state.error != NO_ERROR && f_state.error < WARNINGS_START){
+						   semanticError(f_state.error, &f_state);
+						   YYABORT;
+					   }
+				   }else{
+					   semanticError(IDENTIFIER_NOT_A_FUNCTION, aux);
+					   YYABORT;
+				   }
+			   }else{
+				   semanticError(OBJECT_NOT_A_FUNCTION, aux);
+				   YYABORT;
+			   }
+			   union expression_union u;
+			   $$ = expressionNew(FUNCTION_CALL, u, NULL, NULL, aux->line, aux->column);
+			   $$->exp_type = aux->exp_type;
+		   }
+		   | exp_postfix LPAREN exp_postfix1 RPAREN	{
+			   Expression *aux = $1;
+			   Expression *params = $3;
+			   // lida com erros e warnings em $1
+			   Exp_type_state state = evalExpTypeAndHandleWarnings(aux, in_file);
+			   if(state.error != 0 && state.error < WARNINGS_START){
+				   semanticError(state.error, state.exp);
+				   YYABORT;
+			   }
+			   // verifica se o objeto é uma função
+			   for(;aux->left;aux=aux->left);
+			   if(aux->node_type == IDENTIFIER){
+				   if(aux->node_value.sym->symbol_type == DECLARACAO_FUNCAO){
+					   Func_type_state f_state = matchFunctionCall(aux, params, in_file);
+					   if(f_state.error != NO_ERROR && f_state.error < WARNINGS_START){
+						   semanticError(f_state.error, &f_state);
+						   YYABORT;
+					   }
+				   }else{
+					   semanticError(IDENTIFIER_NOT_A_FUNCTION, aux);
+					   YYABORT;
+				   }
+			   }else{
+				   semanticError(OBJECT_NOT_A_FUNCTION, aux);
+				   YYABORT;
+			   }
+			   union expression_union u;
+			   $$ = expressionNew(FUNCTION_CALL, u, NULL, NULL, aux->line, aux->column);
+			   $$->exp_type = aux->exp_type;
+		   }
 ;
-exp_postfix1: exp_atr						{}
-			| exp_postfix1 COMMA exp_atr	{}
+exp_postfix1: exp_atr						{ $$ = $1; }
+			| exp_atr COMMA exp_postfix1	{
+				union expression_union u;
+				$$ = expressionNew(COMMA_SEPARATOR, u, $1, $3, @2.first_line, @2.first_column);
+			}
 ;
 
 exp_prim: IDENTIFIER	{
@@ -963,6 +1022,42 @@ void semanticError(enum error_list erro, void* element){
 			linhas = exp->line;
 			colunas = exp->column;
 			sprintf(error_msg, "cannot convert from ’%s’ to int", getType(exp->exp_type));
+			break;
+		}
+		case IDENTIFIER_NOT_A_FUNCTION:{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "called object ’%s’ is not a function or function pointer", exp->node_value.sym->id);
+			break;
+		}
+		case OBJECT_NOT_A_FUNCTION:{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "called object is not a function or function pointer");
+			break;
+		}
+		case INCOMPATIBLE_ARGUMENT_TYPE:{
+			Func_type_state *state = element;
+			linhas = state->func->line;
+			colunas = state->func->column;
+			sprintf(error_msg, "incompatible type for argument ’%d’ of ’%s’ expected ’%s’ but argument is of type ’%s’",
+				state->wrong_arg, state->func_name, getType(state->expected_type), getType(state->received_type));
+			break;
+		}
+		case TOO_FEW_ARGUMENTS:{
+			Func_type_state *state = element;
+			linhas = state->func->line;
+			colunas = state->func->column;
+			sprintf(error_msg, "too few arguments to function ’%s’", state->func_name);
+			break;
+		}
+		case TOO_MANY_ARGUMENTS:{
+			Func_type_state *state = element;
+			linhas = state->func->line;
+			colunas = state->func->column;
+			sprintf(error_msg, "too many arguments to function ’%s’",  state->func_name);
 			break;
 		}
 		case NO_ERROR:

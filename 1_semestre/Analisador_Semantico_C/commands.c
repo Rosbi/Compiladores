@@ -142,6 +142,9 @@ void RpnWalk(Expression *root){
             printf("1 - ");
             break;
 
+        case COMMA_SEPARATOR:
+            printf(", ");
+            break;
 
         // expressão primária
         case NUM_INT:
@@ -419,6 +422,14 @@ void freeWarningList(struct warnings *warnings_list){
         warnings_list = aux->next;
         free(aux);
     }
+}
+
+Exp_type_state evalExpTypeAndHandleWarnings(Expression *root, FILE* read_warning_line){
+    Exp_type_state state = {NULL, NO_ERROR, root };
+    state = evaluateExpressionType(state);
+    printWarnings(state.warnings_list, read_warning_line);
+    freeWarningList(state.warnings_list);
+    return state;
 }
 
 Exp_type_state evaluateExpressionType(Exp_type_state root){
@@ -790,12 +801,56 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
             }
             break;
         }
+
+        case FUNCTION_CALL:{
+            // printf("%d, %d\n\n", state.exp->line, state.exp->column);
+        }
     }
 
     state.warnings_list = mergeWarningsLists(state.warnings_list, no_r.warnings_list);
     state.warnings_list = mergeWarningsLists(no_l.warnings_list, state.warnings_list);
 
     return state;
+}
+
+Func_type_state matchFunctionCall(Expression *func, Expression *call, FILE* read_warning_line){
+    struct parameters *param = func->node_value.sym->var.f.parameters;
+    Exp_type_state c_state;
+    Func_type_state f_state = { NO_ERROR, func, func->node_value.sym->id };
+    f_state.func_name = func->node_value.sym->id;
+
+    for(int i=1;param && call;i++, param=param->next, call=call->right){
+        if(call->node_type == COMMA_SEPARATOR){
+            c_state = evalExpTypeAndHandleWarnings(call->left, read_warning_line);
+        }else{
+            c_state = evalExpTypeAndHandleWarnings(call, read_warning_line);
+        }
+
+        if(c_state.error != NO_ERROR && c_state.error < WARNINGS_START){
+            f_state.error = c_state.error;
+            f_state.func  = c_state.exp;
+            return f_state;
+        }
+        
+        if(verifyTypes(param->symbol->type, c_state.exp->exp_type) != MATCH){
+            f_state.error = INCOMPATIBLE_ARGUMENT_TYPE;
+            f_state.expected_type = param->symbol->type;
+            f_state.received_type = c_state.exp->exp_type;
+            f_state.wrong_arg = i;
+            f_state.func = func;
+            return f_state;
+        }
+    }
+
+    if(param){
+        f_state.error = TOO_FEW_ARGUMENTS;
+        return f_state;
+    }else if(call){
+        f_state.error = TOO_MANY_ARGUMENTS;
+        return f_state;
+    }
+
+    return f_state;
 }
 
 const char* getOperator(int operator){
@@ -892,7 +947,7 @@ int compareTypesSize(struct var_type v1, struct var_type v2){
         }else{
             return RIGHT_BIGGER;
         }
-    }else if(v1.type != v2.type){
+    }else if(v1.type != v2.type && v1.pointers == 0){
         if(v1.type == TIPOS_INT){
             return LEFT_BIGGER;
         }else{
