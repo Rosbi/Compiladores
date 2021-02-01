@@ -326,9 +326,19 @@ comandos: comandos lista_comandos	{
 ;
 
 lista_comandos: DO_T bloco WHILE_T LPAREN expressao RPAREN SEMICOLON	{
+				  Exp_type_state state = evalExpTypeAndHandleWarnings($5, in_file);
+				  if(state.error != NO_ERROR && state.error < WARNINGS_START){
+					  semanticError(state.error, state.exp);
+					  YYABORT;
+				  }
 				  $$ = commandNew(COM_WHILE, $5, $2);
 			  }
 			  | IF_T LPAREN expressao RPAREN bloco else_exp				{
+				  Exp_type_state state = evalExpTypeAndHandleWarnings($3, in_file);
+				  if(state.error != NO_ERROR && state.error < WARNINGS_START){
+					  semanticError(state.error, state.exp);
+					  YYABORT;
+				  }
 				  $$ = commandNew(COM_IF, $3, $5, $6);
 			  }
 			  | WHILE_T LPAREN expressao RPAREN bloco					{
@@ -340,6 +350,14 @@ lista_comandos: DO_T bloco WHILE_T LPAREN expressao RPAREN SEMICOLON	{
 				  $$ = commandNew(COM_WHILE, $3, $5);
 			  }
 			  | FOR_T LPAREN opt_exp SEMICOLON opt_exp SEMICOLON opt_exp RPAREN bloco	{
+				  Expression *exps[3] = { $3, $5, $7 };
+				  for(int i=0;i<3;i++){
+					  Exp_type_state state = evalExpTypeAndHandleWarnings(exps[i], in_file);
+					  if(state.error != NO_ERROR && state.error < WARNINGS_START){
+						  semanticError(state.error, state.exp);
+						  YYABORT;
+					  }
+				  }
 				  $$ = commandNew(COM_FOR, $3, $5, $7, $9);
 			  }
 			  | PRINTF_T LPAREN STRING printf_exp RPAREN SEMICOLON		{}
@@ -349,6 +367,11 @@ lista_comandos: DO_T bloco WHILE_T LPAREN expressao RPAREN SEMICOLON	{
 				  $$ = commandNew(COM_RETURN, $2);
 			  }
 			  | expressao SEMICOLON										{
+				  Exp_type_state state = evalExpTypeAndHandleWarnings($1, in_file);
+				  if(state.error != NO_ERROR && state.error < WARNINGS_START){
+					  semanticError(state.error, state.exp);
+					  YYABORT;
+				  }
 				  $$ = commandNew(COM_EXP, $1);
 			  }
 			  | SEMICOLON												{ $$ = NULL; }
@@ -984,7 +1007,7 @@ void semanticError(enum error_list erro, void* element){
 			Expression *exp = element;
 			linhas = exp->line;
 			colunas = exp->column;
-			sprintf(error_msg, "incompatible types when assigning to type ’%s’ from type ’%s’",
+			sprintf(error_msg, "incompatible types when assigning to type '%s' from type '%s'",
 				getType(exp->left->exp_type), getType(exp->right->exp_type));
 			break;
 		}
@@ -992,7 +1015,7 @@ void semanticError(enum error_list erro, void* element){
 			Expression *exp = element;
 			linhas = exp->line;
 			colunas = exp->column;
-			sprintf(error_msg, "invalid operands to binary ’%s’ (have ’%s’ and ’%s’)",
+			sprintf(error_msg, "invalid operands to binary '%s' (have '%s' and '%s')",
 				getOperator(exp->node_type), getType(exp->left->exp_type), getType(exp->right->exp_type));
 			break;
 		}
@@ -1021,14 +1044,14 @@ void semanticError(enum error_list erro, void* element){
 			Expression *exp = element;
 			linhas = exp->line;
 			colunas = exp->column;
-			sprintf(error_msg, "cannot convert from ’%s’ to int", getType(exp->exp_type));
+			sprintf(error_msg, "cannot convert from '%s' to int", getType(exp->exp_type));
 			break;
 		}
 		case IDENTIFIER_NOT_A_FUNCTION:{
 			Expression *exp = element;
 			linhas = exp->line;
 			colunas = exp->column;
-			sprintf(error_msg, "called object ’%s’ is not a function or function pointer", exp->node_value.sym->id);
+			sprintf(error_msg, "called object '%s' is not a function or function pointer", exp->node_value.sym->id);
 			break;
 		}
 		case OBJECT_NOT_A_FUNCTION:{
@@ -1042,7 +1065,7 @@ void semanticError(enum error_list erro, void* element){
 			Func_type_state *state = element;
 			linhas = state->func->line;
 			colunas = state->func->column;
-			sprintf(error_msg, "incompatible type for argument ’%d’ of ’%s’ expected ’%s’ but argument is of type ’%s’",
+			sprintf(error_msg, "incompatible type for argument '%d' of '%s' expected '%s' but argument is of type '%s'",
 				state->wrong_arg, state->func_name, getType(state->expected_type), getType(state->received_type));
 			break;
 		}
@@ -1050,14 +1073,21 @@ void semanticError(enum error_list erro, void* element){
 			Func_type_state *state = element;
 			linhas = state->func->line;
 			colunas = state->func->column;
-			sprintf(error_msg, "too few arguments to function ’%s’", state->func_name);
+			sprintf(error_msg, "too few arguments to function '%s'", state->func_name);
 			break;
 		}
 		case TOO_MANY_ARGUMENTS:{
 			Func_type_state *state = element;
 			linhas = state->func->line;
 			colunas = state->func->column;
-			sprintf(error_msg, "too many arguments to function ’%s’",  state->func_name);
+			sprintf(error_msg, "too many arguments to function '%s'",  state->func_name);
+			break;
+		}
+		case RVALUE_UNARY_OPERAND:{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "lvalue required as unary '%s' operand", getOperator(exp->node_type));
 			break;
 		}
 		case NO_ERROR:

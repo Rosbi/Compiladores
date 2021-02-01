@@ -450,7 +450,8 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
     switch(root.exp->node_type){
         // expressão atribuição
         case ASSIGN: case ADD_ASSIGN: case SUB_ASSIGN:{
-            if(state.exp->node_type == STRING || state.exp->node_type == CHARACTER){
+            if(no_l.exp->node_type == STRING || no_l.exp->node_type == CHARACTER){
+                state.exp->node_value.str = no_l.exp->node_value.str;
                 state.error = STRING_ASSIGNMENT;
                 break;
             }else if(state.exp->left->exp_type.constant){
@@ -651,6 +652,11 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
 
         // expressão unária
         case ADDRESS:{
+            printf("%d, %d\n", no_l.exp->node_type, no_l.exp->exp_type.constant),fflush(stdout);
+            if(no_l.exp->exp_type.constant){
+                state.error = RVALUE_UNARY_OPERAND;
+                break;
+            }
             state.error = matchTypes(UN_ADDRESS_COMP, state.exp->left->exp_type, state.exp->exp_type);
             if(state.error != NO_ERROR && state.error < WARNINGS_START)
                 { break; }

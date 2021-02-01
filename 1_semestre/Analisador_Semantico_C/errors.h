@@ -42,7 +42,7 @@ typedef enum error_list {
     DIVISION_BY_ZERO,
         //void value not ignored as it ought to be
     INVALID_SUBSCRIPTOR,
-        //lvalue required as unary ’<operador-unario>’ operand
+    RVALUE_UNARY_OPERAND,
     INVALID_UNR_OPERAND,
         //array subscript is not an integer
     WRONG_TYPE_COMPARISON,
