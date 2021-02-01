@@ -883,279 +883,118 @@ void semanticError(enum error_list erro, void* element){
 	char error_msg[150];
 
 	switch(erro){
-		case UNDECLARED_SYMBOL:{
-			Symbol *s = element;
-			linhas = s->line;
-			colunas = s->column;
-			sprintf(error_msg, "'%s' undeclared", s->id);
-			break;
-		}
-		case REDECLARED_SYMBOL:{
-			Symbol *s = element;
-			linhas = s->line;
-			colunas = s->column;
-			Symbol *aux = identifierLookup(Current_Symbol_Table, s);
-			sprintf(error_msg, "variable '%s' already declared, previous declaration in line %d column %d", s->id, aux->line, aux->column);
-			break;
-		}
-		case REDEFINED_SYMBOL:{
-			Symbol *s = element;
-			linhas = s->line;
-			colunas = s->column;
-			Symbol *aux = identifierLookup(Current_Symbol_Table, s);
-			sprintf(error_msg, "redefinition of '%s' previous defined in line %d column %d", s->id, aux->line, aux->column);
-			break;
-		}
-		case VARIABLE_DECLARED_VOID:{
-			Symbol *s = element;
-			linhas = s->line;
-			colunas = s->column;
-			sprintf(error_msg, "variable '%s' declared void", s->id);
-			break;
-		}
-		case DIVISION_BY_ZERO:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "division by zero");
-			break;
-		}
-		case INITIALIZER_NOT_CONST:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "'%s' initializer element is not constant", exp->node_value.sym->id);
-			break;
-		}
-		case STRING_DEFINE:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "string type is not compatible with define");
-			break;
-		}
-		case STRING_ASSIGNMENT:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "assignment of read-only location %s", exp->node_value.str);
-			break;
-		}
-		case CONST_IDENTIFIER_ASSIGNMENT:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "assignment of read-only identifier \"%s\"", exp->node_value.sym->id);
-			break;
-		}
-		case RVALUE_ASSIGNMENT:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "lvalue required as left operand of assignment");
-			break;
-		}
-		case ARR_NEGATIVE_INITIALIZER:{
-			Symbol *s = element;
-			linhas = s->line;
-			colunas = s->column;
-			sprintf(error_msg, "size of array '%s' is negative", s->id);
-			break;
-		}
-		case ARR_ZERO_INITIALIZER:{
-			Symbol *s = element;
-			linhas = s->line;
-			colunas = s->column;
-			sprintf(error_msg, "size of array '%s' is zero", s->id);
-			break;
-		}
-		case PARAMETER_DECLARED_VOID:{
-			Symbol *s = element;
-			linhas = s->line;
-			colunas = s->column;
-			sprintf(error_msg, "parameter '%s' declared void", s->id);
-			break;
-		}
-		case ARGUMENT_DIFF_PROTOTYPE:{
-			Symbol *s = element;
-			linhas = s->line;
-			colunas = s->column;
-			sprintf(error_msg, "argument '%s' does not match prototype", s->id);
-			break;
-		}
-		case PROTOTYPE_MORE_ARGS:{
-			Symbol *s = element;
-			linhas = s->line;
-			colunas = s->column;
-			sprintf(error_msg, "prototype for '%s' declares more arguments", s->id);
-			break;
-		}
-		case PROTOTYPE_FEWER_ARGS:{
-			Symbol *s = element;
-			linhas = s->line;
-			colunas = s->column;
-			sprintf(error_msg, "prototype for '%s' declares fewer arguments", s->id);
-			break;
-		}
+		case UNDECLARED_SYMBOL:
+		case REDECLARED_SYMBOL:
+		case REDEFINED_SYMBOL:
+		case VARIABLE_DECLARED_VOID:
+		case ARR_NEGATIVE_INITIALIZER:
+		case ARR_ZERO_INITIALIZER:
+		case PARAMETER_DECLARED_VOID:
+		case ARGUMENT_DIFF_PROTOTYPE:
+		case PROTOTYPE_MORE_ARGS:
+		case PROTOTYPE_FEWER_ARGS:
 		case CONFLICTING_TYPES:{
 			Symbol *s = element;
 			linhas = s->line;
 			colunas = s->column;
-			sprintf(error_msg, "conflicting types for '%s'", s->id);
+			switch(erro){
+				case REDECLARED_SYMBOL:{
+					Symbol *aux = identifierLookup(Current_Symbol_Table, s);
+					sprintf(error_msg, "variable '%s' already declared, previous declaration in line %d column %d", s->id, aux->line, aux->column);
+					break;
+				}
+				case REDEFINED_SYMBOL:{
+					Symbol *aux = identifierLookup(Current_Symbol_Table, s);
+					sprintf(error_msg, "redefinition of '%s' previous defined in line %d column %d", s->id, aux->line, aux->column);
+					break;
+				}
+				case UNDECLARED_SYMBOL:        sprintf(error_msg, "'%s' undeclared", s->id);                             break;
+				case VARIABLE_DECLARED_VOID:   sprintf(error_msg, "variable '%s' declared void", s->id);                 break;
+				case ARR_NEGATIVE_INITIALIZER: sprintf(error_msg, "size of array '%s' is negative", s->id);              break;
+				case ARR_ZERO_INITIALIZER:     sprintf(error_msg, "size of array '%s' is zero", s->id);                  break;
+				case PARAMETER_DECLARED_VOID:  sprintf(error_msg, "parameter '%s' declared void", s->id);                break;
+				case ARGUMENT_DIFF_PROTOTYPE:  sprintf(error_msg, "argument '%s' does not match prototype", s->id);      break;
+				case PROTOTYPE_MORE_ARGS:      sprintf(error_msg, "prototype for '%s' declares more arguments", s->id);  break;
+				case PROTOTYPE_FEWER_ARGS:     sprintf(error_msg, "prototype for '%s' declares fewer arguments", s->id); break;
+				case CONFLICTING_TYPES:        sprintf(error_msg, "conflicting types for '%s'", s->id);                  break;
+				default: break;
+			}
 			break;
 		}
-		case RVALUE_INC_OPERAND:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "lvalue required as increment operand");
-			break;
-		}
-		case RVALUE_DEC_OPERAND:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "lvalue required as decrement operand");
-			break;
-		}
-		case INVALID_UNR_OPERAND:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "invalid type argument of unary '%s' (have '%s')",
-				getOperator(exp->node_type), getType(exp->left->exp_type));
-			break;
-		}
-		case WRONG_TYPE_COMPARISON:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "comparison between '%s' and '%s' operator '%s'",
-				getType(exp->left->exp_type), getType(exp->right->exp_type), getOperator(exp->node_type));
-			break;
-		}
-		case INCOMPATIBLE_ASSIGNMENT:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "incompatible types when assigning to type '%s' from type '%s'",
-				getType(exp->left->exp_type), getType(exp->right->exp_type));
-			break;
-		}
-		case INVALID_BIN_OPERANDS:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "invalid operands to binary '%s' (have '%s' and '%s')",
-				getOperator(exp->node_type), getType(exp->left->exp_type), getType(exp->right->exp_type));
-			break;
-		}
-		case RSHIFT_NEGATIVE:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "right shift count is negative");
-			break;
-		}
-		case LSHIFT_NEGATIVE:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "left shift count is negative");
-			break;
-		}
-		case INVALID_SUBSCRIPTOR:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "subscripted value is neither array nor pointer");
-			break;
-		}
-		case IMPOSSIBLE_INT_CONVERSION:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "cannot convert from '%s' to int", getType(exp->exp_type));
-			break;
-		}
-		case IDENTIFIER_NOT_A_FUNCTION:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "called object '%s' is not a function or function pointer", exp->node_value.sym->id);
-			break;
-		}
-		case OBJECT_NOT_A_FUNCTION:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "called object is not a function or function pointer");
-			break;
-		}
-		case INCOMPATIBLE_ARGUMENT_TYPE:{
-			Func_type_state *state = element;
-			linhas = state->func->line;
-			colunas = state->func->column;
-			sprintf(error_msg, "incompatible type for argument '%d' of '%s' expected '%s' but argument is of type '%s'",
-				state->wrong_arg, state->func_name, getType(state->expected_type), getType(state->received_type));
-			break;
-		}
-		case TOO_FEW_ARGUMENTS:{
-			Func_type_state *state = element;
-			linhas = state->func->line;
-			colunas = state->func->column;
-			sprintf(error_msg, "too few arguments to function '%s'", state->func_name);
-			break;
-		}
-		case TOO_MANY_ARGUMENTS:{
-			Func_type_state *state = element;
-			linhas = state->func->line;
-			colunas = state->func->column;
-			sprintf(error_msg, "too many arguments to function '%s'",  state->func_name);
-			break;
-		}
-		case RVALUE_UNARY_OPERAND:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "lvalue required as unary '%s' operand", getOperator(exp->node_type));
-			break;
-		}
-		case NOT_INT_SUBSCRIPTOR:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "array subscript is not an integer");
-			break;
-		}
-		case INCOMPATIBLE_INITIALIZER:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "incompatible types in initialization when assigning to type '%s' from type '%s'",
-				getType(exp->left->node_value.sym->type), getType(exp->right->exp_type));
-			break;
-		}
-		case WRONG_ARG_UNR_PLUS:{
-			Expression *exp = element;
-			linhas = exp->line;
-			colunas = exp->column;
-			sprintf(error_msg, "wrong type argument to unary plus");
-			break;
-		}
+		case DIVISION_BY_ZERO:
+		case INITIALIZER_NOT_CONST:
+		case STRING_DEFINE:
+		case STRING_ASSIGNMENT:
+		case CONST_IDENTIFIER_ASSIGNMENT:
+		case RVALUE_ASSIGNMENT:
+		case RVALUE_INC_OPERAND:
+		case RVALUE_DEC_OPERAND:
+		case INVALID_UNR_OPERAND:
+		case WRONG_TYPE_COMPARISON:
+		case INCOMPATIBLE_ASSIGNMENT:
+		case INVALID_BIN_OPERANDS:
+		case RSHIFT_NEGATIVE:
+		case LSHIFT_NEGATIVE:
+		case INVALID_SUBSCRIPTOR:
+		case IMPOSSIBLE_INT_CONVERSION:
+		case IDENTIFIER_NOT_A_FUNCTION:
+		case OBJECT_NOT_A_FUNCTION:
+		case RVALUE_UNARY_OPERAND:
+		case NOT_INT_SUBSCRIPTOR:
+		case INCOMPATIBLE_INITIALIZER:
+		case WRONG_ARG_UNR_PLUS:
 		case WRONG_ARG_UNR_MINUS:{
 			Expression *exp = element;
 			linhas = exp->line;
 			colunas = exp->column;
-			sprintf(error_msg, "wrong type argument to unary minus");
+			switch(erro){
+				case DIVISION_BY_ZERO:            sprintf(error_msg, "division by zero"); break;
+				case INITIALIZER_NOT_CONST:       sprintf(error_msg, "'%s' initializer element is not constant", exp->node_value.sym->id); break;
+				case STRING_DEFINE:               sprintf(error_msg, "string type is not compatible with define"); break;
+				case STRING_ASSIGNMENT:           sprintf(error_msg, "assignment of read-only location %s", exp->node_value.str); break;
+				case CONST_IDENTIFIER_ASSIGNMENT: sprintf(error_msg, "assignment of read-only identifier \"%s\"", exp->node_value.sym->id); break;
+				case RVALUE_ASSIGNMENT:           sprintf(error_msg, "lvalue required as left operand of assignment"); break;
+				case RVALUE_INC_OPERAND:          sprintf(error_msg, "lvalue required as increment operand"); break;
+				case RVALUE_DEC_OPERAND:          sprintf(error_msg, "lvalue required as decrement operand"); break;
+				case INVALID_UNR_OPERAND:         sprintf(error_msg, "invalid type argument of unary '%s' (have '%s')", getOperator(exp->node_type), getType(exp->left->exp_type)); break;
+				case WRONG_TYPE_COMPARISON:       sprintf(error_msg, "comparison between '%s' and '%s' operator '%s'", getType(exp->left->exp_type), getType(exp->right->exp_type), getOperator(exp->node_type)); break;
+				case INCOMPATIBLE_ASSIGNMENT:     sprintf(error_msg, "incompatible types when assigning to type '%s' from type '%s'", getType(exp->left->exp_type), getType(exp->right->exp_type)); break;
+				case INVALID_BIN_OPERANDS:        sprintf(error_msg, "invalid operands to binary '%s' (have '%s' and '%s')", getOperator(exp->node_type), getType(exp->left->exp_type), getType(exp->right->exp_type)); break;
+				case RSHIFT_NEGATIVE:             sprintf(error_msg, "right shift count is negative"); break;
+				case LSHIFT_NEGATIVE:             sprintf(error_msg, "left shift count is negative"); break;
+				case INVALID_SUBSCRIPTOR:         sprintf(error_msg, "subscripted value is neither array nor pointer"); break;
+				case IMPOSSIBLE_INT_CONVERSION:   sprintf(error_msg, "cannot convert from '%s' to int", getType(exp->exp_type)); break;
+				case IDENTIFIER_NOT_A_FUNCTION:   sprintf(error_msg, "called object '%s' is not a function or function pointer", exp->node_value.sym->id); break;
+				case OBJECT_NOT_A_FUNCTION:       sprintf(error_msg, "called object is not a function or function pointer"); break;
+				case RVALUE_UNARY_OPERAND:        sprintf(error_msg, "lvalue required as unary '%s' operand", getOperator(exp->node_type)); break;
+				case NOT_INT_SUBSCRIPTOR:         sprintf(error_msg, "array subscript is not an integer"); break;
+				case INCOMPATIBLE_INITIALIZER:    sprintf(error_msg, "incompatible types in initialization when assigning to type '%s' from type '%s'", getType(exp->left->node_value.sym->type), getType(exp->right->exp_type)); break;
+				case WRONG_ARG_UNR_PLUS:          sprintf(error_msg, "wrong type argument to unary plus"); break;
+				case WRONG_ARG_UNR_MINUS:         sprintf(error_msg, "wrong type argument to unary minus"); break;
+				default: break;
+			}
+			break;
+		}
+		case INCOMPATIBLE_ARGUMENT_TYPE:
+		case TOO_FEW_ARGUMENTS:
+		case TOO_MANY_ARGUMENTS:{
+			Func_type_state *state = element;
+			linhas = state->func->line;
+			colunas = state->func->column;
+			switch(erro){
+				case INCOMPATIBLE_ARGUMENT_TYPE: sprintf(error_msg, "incompatible type for argument '%d' of '%s' expected '%s' but argument is of type '%s'", state->wrong_arg, state->func_name, getType(state->expected_type), getType(state->received_type)); break;
+				case TOO_FEW_ARGUMENTS:          sprintf(error_msg, "too few arguments to function '%s'", state->func_name); break;
+				case TOO_MANY_ARGUMENTS:         sprintf(error_msg, "too many arguments to function '%s'",  state->func_name); break;
+				default: break;
+			}
 			break;
 		}
 		case NO_ERROR:
 			printf("problem in parsing, no semantic error passed to semantic error function");
 			return;
-		// default:
-		// 	printf("unknown error code in semantic error function");
-		// 	return;
+		default:
+			printf("unknown error code in semantic error function: %d\n", erro);
+			return;
 	}
 
 	printf("error:semantic:%d:%d: ", linhas, colunas);
