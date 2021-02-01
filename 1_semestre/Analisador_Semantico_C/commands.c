@@ -464,31 +464,169 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
     state.exp = root.exp;
 
     switch(root.exp->node_type){
-        // expressão atribuição
-        case ASSIGN: case ADD_ASSIGN: case SUB_ASSIGN:{
-            if(no_l.exp->node_type == STRING || no_l.exp->node_type == CHARACTER){
-                state.exp->node_value.str = no_l.exp->node_value.str;
-                state.error = STRING_ASSIGNMENT;
-                break;
-            }else if(state.exp->left->exp_type.constant){
-                state.error = RVALUE_ASSIGNMENT;
-                break;
-            }
+        case ASSIGN: case ADD_ASSIGN: case SUB_ASSIGN:
+        case LOG_OR: case LOG_AND: case BIT_OR: case BIT_XOR: case BIT_AND:
+        case EQUALS: case NOT_EQUALS: case LESS: case LEQ: case GEQ: case GREAT:
+        case ADD: case SUB: case MUL: case DIV: case MOD:
+        case ADDRESS:
+        case UNR_PLUS: case UNR_MINUS:
+        case BIT_NOT: case LOG_NOT:
+        case INC: case DEC:{
             switch(root.exp->node_type){
-                case ASSIGN:     state.error = matchTypes(ASSIGN_COMP,     state.exp->left->exp_type, state.exp->right->exp_type); break;
-                case ADD_ASSIGN: state.error = matchTypes(ADD_ASSIGN_COMP, state.exp->left->exp_type, state.exp->right->exp_type); break;
-                case SUB_ASSIGN: state.error = matchTypes(SUB_ASSIGN_COMP, state.exp->left->exp_type, state.exp->right->exp_type); break;
+                case ASSIGN: case ADD_ASSIGN: case SUB_ASSIGN:{
+                    if(no_l.exp->node_type == STRING || no_l.exp->node_type == CHARACTER){
+                        state.exp->node_value.str = no_l.exp->node_value.str;
+                        state.error = STRING_ASSIGNMENT;
+                        break;
+                    }else if(state.exp->left->exp_type.constant){
+                        state.error = RVALUE_ASSIGNMENT;
+                        break;
+                    }
+                    switch(root.exp->node_type){
+                        case ASSIGN:     state.error = matchTypes(ASSIGN_COMP,     state.exp->left->exp_type, state.exp->right->exp_type); break;
+                        case ADD_ASSIGN: state.error = matchTypes(ADD_ASSIGN_COMP, state.exp->left->exp_type, state.exp->right->exp_type); break;
+                        case SUB_ASSIGN: state.error = matchTypes(SUB_ASSIGN_COMP, state.exp->left->exp_type, state.exp->right->exp_type); break;
+                    }
+                    state.exp->exp_type = state.exp->left->exp_type;
+                    break;
+                }
+                case LOG_OR: case LOG_AND: case BIT_OR: case BIT_XOR: case BIT_AND:{
+                    switch(root.exp->node_type){
+                        case LOG_OR:
+                            state.error = matchTypes(LOG_OR_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
+                            break;
+                        case LOG_AND:
+                            state.error = matchTypes(LOG_AND_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
+                            break;
+                        case BIT_OR:
+                            state.error = matchTypes(BIT_OR_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
+                            break;
+                        case BIT_XOR:
+                            state.error = matchTypes(BIT_XOR_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
+                            break;
+                        case BIT_AND:
+                            state.error = matchTypes(BIT_AND_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
+                            break;
+                    }
+                    state.exp->exp_type.type = TIPOS_INT;
+                    state.exp->exp_type.pointers = 0;
+                    state.exp->exp_type.constant = true;
+                    break;
+                }
+                case EQUALS: case NOT_EQUALS: case LESS: case LEQ: case GEQ: case GREAT:{
+                    switch(root.exp->node_type){
+                        case EQUALS:
+                            state.error = matchTypes(EQUAL_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
+                            break;
+                        case NOT_EQUALS:
+                            state.error = matchTypes(DIFF_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
+                            break;
+                        case LESS:
+                            state.error = matchTypes(LESS_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
+                            break;
+                        case LEQ:
+                            state.error = matchTypes(LEQ_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
+                            break;
+                        case GEQ:
+                            state.error = matchTypes(GEQ_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
+                            break;
+                        case GREAT:
+                            state.error = matchTypes(GREAT_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
+                            break;
+                    }
+                    state.exp->exp_type.type = TIPOS_INT;
+                    state.exp->exp_type.pointers = 0;
+                    state.exp->exp_type.constant = true;
+                    break;
+                }
+                case ADD: case SUB: case MUL: case DIV: case MOD:{
+                    switch(root.exp->node_type){
+                        case ADD: state.error = matchTypes(PLUS_COMP,      state.exp->left->exp_type, state.exp->right->exp_type); break;
+                        case SUB: state.error = matchTypes(MINUS_COMP,     state.exp->left->exp_type, state.exp->right->exp_type); break;
+                        case MUL: state.error = matchTypes(MUL_COMP,       state.exp->left->exp_type, state.exp->right->exp_type); break;
+                        case DIV: state.error = matchTypes(DIV_COMP,       state.exp->left->exp_type, state.exp->right->exp_type);
+                            Const_expr_state div_result = evaluateConstExpr(state.exp->right);
+                            if(div_result.error ==  NO_ERROR && div_result.value == 0){
+                                state.error = DIVISION_BY_ZERO;
+                                break;
+                            }
+                            break;
+                        case MOD: state.error = matchTypes(REMAINDER_COMP, state.exp->left->exp_type, state.exp->right->exp_type); break;
+                    }
+                    if(verifyTypes(state.exp->left->exp_type, state.exp->right->exp_type) == MATCH){
+                        if(state.exp->left->exp_type.type == TIPOS_CHAR){
+                            state.exp->exp_type.type = TIPOS_CHAR;
+                        }
+                    }else{
+                        state.exp->exp_type.type = TIPOS_INT;
+                    }
+                    state.exp->exp_type.pointers = state.exp->left->exp_type.pointers;
+                    state.exp->exp_type.constant = true;
+                    break;
+                }
+                case ADDRESS:{
+                    if(no_l.exp->exp_type.constant){
+                        state.error = RVALUE_UNARY_OPERAND;
+                        break;
+                    }
+                    state.exp->exp_type.type = state.exp->left->exp_type.type;
+                    state.exp->exp_type.pointers = state.exp->left->exp_type.pointers + 1;
+                    state.exp->exp_type.constant = true;
+                    state.error = matchTypes(UN_ADDRESS_COMP, state.exp->left->exp_type, state.exp->exp_type);
+                    break;
+                }
+                case UNR_PLUS: case UNR_MINUS:{
+                    switch(root.exp->node_type){
+                        case UNR_PLUS:  state.error = matchTypes(UN_PLUS_COMP,  state.exp->left->exp_type, state.exp->exp_type); break;
+                        case UNR_MINUS: state.error = matchTypes(UN_MINUS_COMP, state.exp->left->exp_type, state.exp->exp_type); break;
+                    }
+                    state.exp->exp_type = state.exp->left->exp_type;
+                    state.exp->exp_type.constant = true;
+                    break;
+                }
+                case BIT_NOT: case LOG_NOT:{
+                    switch(root.exp->node_type){
+                        case BIT_NOT: state.error = matchTypes(UN_BIT_NOT_COMP, state.exp->left->exp_type, state.exp->exp_type); break;
+                        case LOG_NOT: state.error = matchTypes(UN_LOG_NOT_COMP, state.exp->left->exp_type, state.exp->exp_type); break;
+                    }
+                    state.exp->exp_type.constant = true;
+                    state.exp->exp_type.pointers = 0;
+                    state.exp->exp_type.type     = TIPOS_INT;
+                    state.error = matchTypes(UN_BIT_NOT_COMP, state.exp->left->exp_type, state.exp->exp_type);
+                    break;
+                }
+                case INC: case DEC:{
+                    int error;
+                    switch(root.exp->node_type){
+                        case INC:
+                            matchTypes(UN_INC_COMP, state.exp->left->exp_type, state.exp->exp_type);
+                            error = RVALUE_INC_OPERAND;
+                            break;
+                        case DEC:
+                            matchTypes(UN_DEC_COMP, state.exp->left->exp_type, state.exp->exp_type);
+                            error = RVALUE_DEC_OPERAND;
+                            break;
+                    }
+
+                    if(state.exp->left->exp_type.constant){
+                        state.error = error;
+                        break;
+                    }else{
+                        state.exp->exp_type = state.exp->left->exp_type;
+                        state.exp->exp_type.constant = true;
+                    }
+                    break;
+                }
             }
+            
             if(state.error != NO_ERROR && state.error < WARNINGS_START){
                 break;
             }else if(state.error > WARNINGS_START){
                 state.warnings_list = warningInsert(state.warnings_list, state.error, state.exp);
             }
-            state.exp->exp_type = state.exp->left->exp_type;
             break;
         }
 
-        // expressão condicional (_ ? _ : _)
         case CONDITIONAL_EXP:{
             state.exp->exp_type = no_r.exp->exp_type;
             break;
@@ -514,73 +652,6 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
             break;
         }
 
-        case LOG_OR:   // expressão or lógico
-        case LOG_AND:  // expressão and lógico
-        case BIT_OR:   // expressão or
-        case BIT_XOR:  // expressão xor
-        case BIT_AND:{ // expressão and
-            switch(root.exp->node_type){
-                case LOG_OR:
-                    state.error = matchTypes(LOG_OR_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-                    break;
-                case LOG_AND:
-                    state.error = matchTypes(LOG_AND_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-                    break;
-                case BIT_OR:
-                    state.error = matchTypes(BIT_OR_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-                    break;
-                case BIT_XOR:
-                    state.error = matchTypes(BIT_XOR_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-                    break;
-                case BIT_AND:
-                    state.error = matchTypes(BIT_AND_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-                    break;
-            }
-            if(state.error != NO_ERROR && state.error < WARNINGS_START){
-                break;
-            }else if(state.error > WARNINGS_START){
-                state.warnings_list = warningInsert(state.warnings_list, state.error, state.exp);
-            }
-            state.exp->exp_type.type = TIPOS_INT;
-            state.exp->exp_type.pointers = 0;
-            state.exp->exp_type.constant = true;
-            break;
-        }
-
-        case EQUALS: case NOT_EQUALS: // expressão igualdade
-        case LESS: case LEQ: case GEQ: case GREAT:{ // expressão relacional
-            switch(root.exp->node_type){
-                case EQUALS:
-                    state.error = matchTypes(EQUAL_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-                    break;
-                case NOT_EQUALS:
-                    state.error = matchTypes(DIFF_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-                    break;
-                case LESS:
-                    state.error = matchTypes(LESS_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-                    break;
-                case LEQ:
-                    state.error = matchTypes(LEQ_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-                    break;
-                case GEQ:
-                    state.error = matchTypes(GEQ_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-                    break;
-                case GREAT:
-                    state.error = matchTypes(GREAT_COMP, state.exp->left->exp_type, state.exp->right->exp_type);
-                    break;
-            }
-            if(state.error != NO_ERROR && state.error < WARNINGS_START){
-                break;
-            }else if(state.error > WARNINGS_START){
-                state.warnings_list = warningInsert(state.warnings_list, state.error, state.exp);
-            }
-            state.exp->exp_type.type = TIPOS_INT;
-            state.exp->exp_type.pointers = 0;
-            state.exp->exp_type.constant = true;
-            break;
-        }
-
-        // expressão shift
         case RSHIFT: case LSHIFT:{
             int negative_shift_error, exceeds_size_warning;
             switch(root.exp->node_type){
@@ -631,40 +702,6 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
             break;
         }
 
-        case ADD: case SUB:           // expressão aditiva
-        case MUL: case DIV: case MOD:{ // expressão multiplicativa
-            switch(root.exp->node_type){
-                case ADD: state.error = matchTypes(PLUS_COMP,      state.exp->left->exp_type, state.exp->right->exp_type); break;
-                case SUB: state.error = matchTypes(MINUS_COMP,     state.exp->left->exp_type, state.exp->right->exp_type); break;
-                case MUL: state.error = matchTypes(MUL_COMP,       state.exp->left->exp_type, state.exp->right->exp_type); break;
-                case DIV: state.error = matchTypes(DIV_COMP,       state.exp->left->exp_type, state.exp->right->exp_type);
-                    Const_expr_state div_result = evaluateConstExpr(state.exp->right);
-                    if(div_result.error ==  NO_ERROR && div_result.value == 0){
-                        state.error = DIVISION_BY_ZERO;
-                        break;
-                    }
-                    break;
-                case MOD: state.error = matchTypes(REMAINDER_COMP, state.exp->left->exp_type, state.exp->right->exp_type); break;
-            }
-
-            if(state.error != NO_ERROR && state.error < WARNINGS_START){
-                break;
-            }else if(state.error > WARNINGS_START){
-                state.warnings_list = warningInsert(state.warnings_list, state.error, state.exp);
-            }
-
-            if(verifyTypes(state.exp->left->exp_type, state.exp->right->exp_type) == MATCH){
-                if(state.exp->left->exp_type.type == TIPOS_CHAR){
-                    state.exp->exp_type.type = TIPOS_CHAR;
-                }
-            }else{
-                state.exp->exp_type.type = TIPOS_INT;
-            }
-            state.exp->exp_type.pointers = state.exp->left->exp_type.pointers;
-            state.exp->exp_type.constant = true;
-            break;
-        }
-
         case CAST:{
             if(compareTypesSize(state.exp->exp_type, state.exp->left->exp_type) == RIGHT_BIGGER){
                 state.warnings_list = warningInsert(state.warnings_list, DIFFERENT_CAST_SIZE_W, state.exp);
@@ -672,20 +709,6 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
             break;
         }
 
-        // expressão unária
-        case ADDRESS:{
-            if(no_l.exp->exp_type.constant){
-                state.error = RVALUE_UNARY_OPERAND;
-                break;
-            }
-            state.error = matchTypes(UN_ADDRESS_COMP, state.exp->left->exp_type, state.exp->exp_type);
-            if(state.error != NO_ERROR && state.error < WARNINGS_START)
-                { break; }
-            state.exp->exp_type.type = state.exp->left->exp_type.type;
-            state.exp->exp_type.pointers = state.exp->left->exp_type.pointers + 1;
-            state.exp->exp_type.constant = true;
-            break;
-        }
         case POINTER_DEFERENCE:{
             state.error = matchTypes(UN_DEFERENCE_COMP, state.exp->left->exp_type, state.exp->exp_type);
             if(state.error != NO_ERROR && state.error < WARNINGS_START)
@@ -700,68 +723,7 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
             }
             break;
         }
-        case UNR_PLUS:{
-            state.error = matchTypes(UN_PLUS_COMP, state.exp->left->exp_type, state.exp->exp_type);
-            if(state.error != NO_ERROR && state.error < WARNINGS_START)
-                { break; }
-            state.exp->exp_type = state.exp->left->exp_type;
-            state.exp->exp_type.constant = true;
-            break;
-        }
-        case UNR_MINUS:{
-            state.error = matchTypes(UN_MINUS_COMP, state.exp->left->exp_type, state.exp->exp_type);
-            if(state.error != NO_ERROR && state.error < WARNINGS_START)
-                { break; }
-            state.exp->exp_type = state.exp->left->exp_type;
-            state.exp->exp_type.constant = true;
-            break;
-        }
-        case BIT_NOT:{
-            state.error = matchTypes(UN_BIT_NOT_COMP, state.exp->left->exp_type, state.exp->exp_type);
-            if(state.error != NO_ERROR && state.error < WARNINGS_START)
-                { break; }
-            state.exp->exp_type.constant = true;
-            state.exp->exp_type.pointers = 0;
-            state.exp->exp_type.type     = TIPOS_INT;
-            break;
-        }
-        case LOG_NOT:{
-            state.error = matchTypes(UN_LOG_NOT_COMP, state.exp->left->exp_type, state.exp->exp_type);
-            if(state.error != NO_ERROR && state.error < WARNINGS_START)
-                { break; }
-            state.exp->exp_type.constant = true;
-            state.exp->exp_type.pointers = 0;
-            state.exp->exp_type.type     = TIPOS_INT;
-            break;
-        }
 
-        // expressão pósfixa E unária
-        case INC:{
-            state.error = matchTypes(UN_INC_COMP, state.exp->left->exp_type, state.exp->exp_type);
-            if(state.error != NO_ERROR && state.error < WARNINGS_START)
-                { break; }
-            if(state.exp->left->exp_type.constant){
-                state.error = RVALUE_INC_OPERAND;
-                break;
-            }else{
-                state.exp->exp_type = state.exp->left->exp_type;
-                state.exp->exp_type.constant = true;
-            }
-            break;
-        }
-        case DEC:{
-            state.error = matchTypes(UN_DEC_COMP, state.exp->left->exp_type, state.exp->exp_type);
-            if(state.error != NO_ERROR && state.error < WARNINGS_START)
-                { break; }
-            if(state.exp->left->exp_type.constant){
-                state.error = RVALUE_DEC_OPERAND;
-                break;
-            }else{
-                state.exp->exp_type = state.exp->left->exp_type;
-                state.exp->exp_type.constant = true;
-            }
-            break;
-        }
         case SUBSCRIPT:{
             if(no_l.exp->node_type == IDENTIFIER && no_l.exp->node_value.sym->symbol_type == DECLARACAO_VARIAVEL){
                 state.exp->exp_type = no_l.exp->exp_type;
@@ -794,8 +756,10 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
             }
             break;
         }
+        case FUNCTION_CALL:{
+            // printf("%d, %d\n\n", state.exp->line, state.exp->column);
+        }
 
-        // expressão primária
         case NUM_INT:{
             state.exp->exp_type.type     = TIPOS_INT;
             state.exp->exp_type.pointers = 0;
@@ -827,10 +791,6 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
                 }
             }
             break;
-        }
-
-        case FUNCTION_CALL:{
-            // printf("%d, %d\n\n", state.exp->line, state.exp->column);
         }
     }
 

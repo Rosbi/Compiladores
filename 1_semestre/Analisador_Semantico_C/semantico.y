@@ -1136,6 +1136,20 @@ void semanticError(enum error_list erro, void* element){
 				getType(exp->left->node_value.sym->type), getType(exp->right->exp_type));
 			break;
 		}
+		case WRONG_ARG_UNR_PLUS:{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "wrong type argument to unary plus");
+			break;
+		}
+		case WRONG_ARG_UNR_MINUS:{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "wrong type argument to unary minus");
+			break;
+		}
 		case NO_ERROR:
 			printf("problem in parsing, no semantic error passed to semantic error function");
 			return;

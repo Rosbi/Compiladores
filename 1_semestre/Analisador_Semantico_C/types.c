@@ -31,8 +31,8 @@ const int compatibility_table[29][6] = {
     /* ADD_ASSIGN_COMP   */ {      1,        1,        1,        6,       6,       7      },
     /* SUB_ASSIGN_COMP   */ {      1,        1,        1,        6,       6,       7      },
                             /*    INT       CHAR      PNT        --       --       -      */
-    /* UN_PLUS_COMP      */ {      1,        1,        0,        0,       0,       0      },
-    /* UN_MINUS_COMP     */ {      1,        1,        0,        0,       0,       0      },
+    /* UN_PLUS_COMP      */ {      1,        1,        8,        0,       0,       0      },
+    /* UN_MINUS_COMP     */ {      1,        1,        9,        0,       0,       0      },
     /* UN_DEFERENCE_COMP */ {      0,        0,        1,        0,       0,       0      },
     /* UN_INC_COMP       */ {      1,        1,        1,        0,       0,       0      },
     /* UN_DEC_COMP       */ {      1,        1,        1,        0,       0,       0      },
@@ -95,6 +95,8 @@ Error_list checkTypeMissmatch(int result_to_analyze, struct var_type var1, struc
             }
             break;
         case 7: error = INCOMPATIBLE_ASSIGNMENT; break;
+        case 8: error = WRONG_ARG_UNR_PLUS;      break;
+        case 9: error = WRONG_ARG_UNR_MINUS;     break;
     }
 
     return error;

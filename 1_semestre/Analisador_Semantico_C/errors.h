@@ -50,8 +50,8 @@ typedef enum error_list {
     STRING_ASSIGNMENT,
     INCOMPATIBLE_ASSIGNMENT,
     INVALID_BIN_OPERANDS,
-        //wrong type argument to unary plus
-        //wrong type argument to unary minus
+    WRONG_ARG_UNR_PLUS,//wrong type argument to unary plus
+    WRONG_ARG_UNR_MINUS,//wrong type argument to unary minus
 
     WARNINGS_START,
     //Warnings
