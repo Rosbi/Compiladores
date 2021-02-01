@@ -15,7 +15,7 @@ typedef enum error_list {
     CONFLICTING_TYPES,
     ARR_NEGATIVE_INITIALIZER,
     ARR_ZERO_INITIALIZER,
-        //incompatible types in initialization when assigning to type ’<nome-do-tipo>’ from type ’<nome-do-tipo>’
+    INCOMPATIBLE_INITIALIZER,
 
     /* Erros em chamadas de função */
     OBJECT_NOT_A_FUNCTION,
@@ -44,7 +44,7 @@ typedef enum error_list {
     INVALID_SUBSCRIPTOR,
     RVALUE_UNARY_OPERAND,
     INVALID_UNR_OPERAND,
-        //array subscript is not an integer
+    NOT_INT_SUBSCRIPTOR,
     WRONG_TYPE_COMPARISON,
     IMPOSSIBLE_INT_CONVERSION,
     STRING_ASSIGNMENT,

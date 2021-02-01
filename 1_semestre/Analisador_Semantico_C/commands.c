@@ -161,7 +161,7 @@ void RpnWalk(Expression *root){
             break;
     }
 }
-
+extern FILE* in_file;
 Const_expr_state evaluateConstExpr(Expression *root){
     Const_expr_state state = { 0, NO_ERROR, root };
     if(!root)
@@ -250,22 +250,36 @@ Const_expr_state evaluateConstExpr(Expression *root){
             break;
 
         // expressão shift
-        case RSHIFT:
-            state.value = no_l.value >> no_r.value;
+        case RSHIFT: case LSHIFT:{
+            struct warnings w = { 0, state.exp, NULL };
+            int error;
+            switch(root->node_type){
+                case LSHIFT:
+                    state.value = no_l.value << no_r.value;
+                    w.warning = LSHIFT_EXCEEDS_SIZE_W;
+                    error = LSHIFT_NEGATIVE;
+                    break;
+                case RSHIFT:
+                    state.value = no_l.value >> no_r.value;
+                    w.warning = RSHIFT_EXCEEDS_SIZE_W;
+                    error = RSHIFT_NEGATIVE;
+                    break;
+            }
             if(no_r.value >= TIPOS_INT){
-                // state.warning = RSHIFT_EXCEEDS_SIZE_W;
+                printWarnings(&w, in_file);
             }else if(no_r.value < 0){
-                state.error = RSHIFT_NEGATIVE;
+                state.error = error;
             }
             break;
-        case LSHIFT:
-            state.value = no_l.value << no_r.value;
-            if(no_r.value >= TIPOS_INT){
-                // state.warning = RSHIFT_EXCEEDS_SIZE_W;
-            }else if(no_r.value < 0){
-                state.error = LSHIFT_NEGATIVE;
-            }
-            break;
+        }
+        // case LSHIFT:
+        //     state.value = no_l.value << no_r.value;
+        //     if(no_r.value >= TIPOS_INT){
+        //         state.warning = LSHIFT_EXCEEDS_SIZE_W;
+        //     }else if(no_r.value < 0){
+        //         state.error = LSHIFT_NEGATIVE;
+        //     }
+        //     break;
 
         // expressão aditiva
         case ADD:
@@ -362,11 +376,11 @@ void printWarnings(struct warnings* warnings_list, FILE* lines_file){
                     getType(aux->exp->left->exp_type), getType(aux->exp->right->exp_type), getOperator(aux->exp->node_type));
                 break;
             case CONDITIONAL_TYPE_MISSMATCH_W:
-                sprintf(warning_msg, "'%s'/'%s' type missmatch in conditional expression",
+                sprintf(warning_msg, "'%s'/'%s' type mismatch in conditional expression",
                     getType(aux->exp->left->exp_type), getType(aux->exp->right->exp_type));
                 break;
             case DIFFERENT_CAST_SIZE_W:
-                sprintf(warning_msg, "cast from ’%s’ to ’%s’ of different size",
+                sprintf(warning_msg, "cast from '%s' to '%s' of different size",
                     getType(aux->exp->left->exp_type), getType(aux->exp->exp_type));
                 break;
             default:
@@ -443,8 +457,10 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
         { return no_l; }
     Exp_type_state no_r = { NULL, NO_ERROR, root.exp->right };
     no_r = evaluateExpressionType(no_r);
-    if(no_r.error != NO_ERROR && no_r.error < WARNINGS_START)
-        { return no_r; }
+    if(no_r.error != NO_ERROR && no_r.error < WARNINGS_START){
+        no_r.warnings_list = mergeWarningsLists(no_l.warnings_list, no_r.warnings_list);
+        return no_r;
+    }
     state.exp = root.exp;
 
     switch(root.exp->node_type){
@@ -579,12 +595,17 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
                     exceeds_size_warning = LSHIFT_EXCEEDS_SIZE_W;
                     break;
             }
+
             if(state.error != NO_ERROR && state.error < WARNINGS_START){
+                if(no_r.exp->exp_type.pointers > 0){
+                    state.error = IMPOSSIBLE_INT_CONVERSION;
+                    state.exp->exp_type = no_r.exp->exp_type;
+                }
                 break;
             }else if(state.error > WARNINGS_START){
                 state.warnings_list = warningInsert(state.warnings_list, state.error, state.exp);
             }
-            //verifica se o valor da expressão direita
+            //verifica o valor da expressão direita
             Const_expr_state right_value = evaluateConstExpr(state.exp->right);
             if(right_value.error == NO_ERROR){
                 if(state.exp->left->exp_type.pointers > 0){
@@ -599,10 +620,11 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
                     if(right_value.value >= TIPOS_CHAR_SIZE){
                         state.warnings_list = warningInsert(state.warnings_list, exceeds_size_warning, state.exp);
                     }
-                }else if(right_value.value < 0){
-                    state.error = negative_shift_error;
-                    break;
-                }
+                } 
+            }
+            if(right_value.value < 0){
+                state.error = negative_shift_error;
+                break;
             }
             state.exp->exp_type = state.exp->left->exp_type;
             state.exp->exp_type.constant = true;
@@ -652,7 +674,6 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
 
         // expressão unária
         case ADDRESS:{
-            printf("%d, %d\n", no_l.exp->node_type, no_l.exp->exp_type.constant),fflush(stdout);
             if(no_l.exp->exp_type.constant){
                 state.error = RVALUE_UNARY_OPERAND;
                 break;
@@ -754,7 +775,7 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
                 break;
             }
             if(no_r.exp->exp_type.pointers > 0){
-                state.error = IMPOSSIBLE_INT_CONVERSION;
+                state.error = NOT_INT_SUBSCRIPTOR;
                 state.exp->exp_type = no_r.exp->exp_type;
                 break;
             }
@@ -773,7 +794,7 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
             }
             break;
         }
-        
+
         // expressão primária
         case NUM_INT:{
             state.exp->exp_type.type     = TIPOS_INT;

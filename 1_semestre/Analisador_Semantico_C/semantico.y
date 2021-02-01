@@ -205,23 +205,54 @@ declaracoes:
 declaracao_var: tipo declaracao_var1 SEMICOLON	{}
 ;
 declaracao_var1:
-	pointer IDENTIFIER array opt_assign							{
-		struct var_type t = { g_tipo, $1 };
-		struct variable v = { $3, false };
-		union symbol_union u = { .v = v };
-		Symbol *aux = symbolNew(DECLARACAO_VARIAVEL, $2, t, u, @2.first_line, @2.first_column);
-		if(!varInsertAndCheck(Current_Symbol_Table, aux)){ YYABORT; }
+	pointer IDENTIFIER array {
+			struct var_type t = { g_tipo, $1 };
+			struct variable v = { $3, false };
+			union symbol_union u = { .v = v };
+			Symbol *aux = symbolNew(DECLARACAO_VARIAVEL, $2, t, u, @2.first_line, @2.first_column);
+			if(!varInsertAndCheck(Current_Symbol_Table, aux)){ YYABORT; }
+		}					opt_assign							{
+			if($5){
+				union expression_union eu = { .sym=getPrimeiroRegistro(Current_Symbol_Table, $2) };
+				$5->left = expressionNew(IDENTIFIER, eu, NULL, NULL, @2.first_line, @2.first_column);
+				Exp_type_state state = evalExpTypeAndHandleWarnings($5->right, in_file);
+				if(state.error != NO_ERROR && state.error < WARNINGS_START){
+					semanticError(state.error, state.exp);
+					YYABORT;
+				}
+				if(verifyTypes(eu.sym->type, $5->right->exp_type) != MATCH){
+					semanticError(INCOMPATIBLE_INITIALIZER, $5);
+					YYABORT;
+				}
+			}
 	}
-	| declaracao_var1 COMMA pointer IDENTIFIER array opt_assign	{
-		struct var_type t = { g_tipo, $3 };
-		struct variable v = { $5, false };
-		union symbol_union u = { .v = v };
-		Symbol *aux = symbolNew(DECLARACAO_VARIAVEL, $4, t, u, @4.first_line, @4.first_column);
-		if(!varInsertAndCheck(Current_Symbol_Table, aux)){ YYABORT; }
+	| declaracao_var1 COMMA pointer IDENTIFIER array{
+			struct var_type t = { g_tipo, $3 };
+			struct variable v = { $5, false };
+			union symbol_union u = { .v = v };
+			Symbol *aux = symbolNew(DECLARACAO_VARIAVEL, $4, t, u, @4.first_line, @4.first_column);
+			if(!varInsertAndCheck(Current_Symbol_Table, aux)){ YYABORT; }
+		}					opt_assign							{
+		if($7){
+				union expression_union eu = { .sym=getPrimeiroRegistro(Current_Symbol_Table, $4) };
+				$7->left = expressionNew(IDENTIFIER, eu, NULL, NULL, @4.first_line, @4.first_column);
+				Exp_type_state state = evalExpTypeAndHandleWarnings($7->right, in_file);
+				if(state.error != NO_ERROR && state.error < WARNINGS_START){
+					semanticError(state.error, state.exp);
+					YYABORT;
+				}
+				if(verifyTypes(eu.sym->type, $7->right->exp_type) != MATCH){
+					semanticError(INCOMPATIBLE_INITIALIZER, $7);
+					YYABORT;
+				}
+			}
 	}
 ;
-opt_assign: ASSIGN exp_atr	{}
-		  | /* epsilon */	{}
+opt_assign: ASSIGN exp_atr	{
+				union expression_union u;
+				$$ = expressionNew(ASSIGN, u, NULL, $2, @1.first_line, @1.first_column);
+		  }
+		  | /* epsilon */	{ $$ = NULL; }
 ;
 
 declaracao_prot: function_header SEMICOLON	{}
@@ -738,13 +769,13 @@ int main(int argc, char **argv){
 	yyparse();
 
 	// printa as tabelas
-	printf("\nGlobal Symbols:\n");
+	/* printf("\nGlobal Symbols:\n");
 	HshTblMap(Program_Table.Global_Symbol_Table, printSymbol);
 	for(struct function_list *aux=Program_Table.head;aux;aux=aux->next){
 		printf("\n%s Local Symbols:\n", aux->function.name);
 		HshTblMap(aux->function.Local_Symbol_Table, printSymbol);
 		printFunctionBody(aux->function.commands_head);
-	}
+	} */
 	/*
 	//liberação de memória
 	HshTblMap(Program_Table.Global_Symbol_Table, freeSymbol);
@@ -1088,6 +1119,21 @@ void semanticError(enum error_list erro, void* element){
 			linhas = exp->line;
 			colunas = exp->column;
 			sprintf(error_msg, "lvalue required as unary '%s' operand", getOperator(exp->node_type));
+			break;
+		}
+		case NOT_INT_SUBSCRIPTOR:{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "array subscript is not an integer");
+			break;
+		}
+		case INCOMPATIBLE_INITIALIZER:{
+			Expression *exp = element;
+			linhas = exp->line;
+			colunas = exp->column;
+			sprintf(error_msg, "incompatible types in initialization when assigning to type '%s' from type '%s'",
+				getType(exp->left->node_value.sym->type), getType(exp->right->exp_type));
 			break;
 		}
 		case NO_ERROR:
