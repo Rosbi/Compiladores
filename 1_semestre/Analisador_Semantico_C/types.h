@@ -44,9 +44,14 @@ typedef enum types_compatibility {
     POINTER_INT,
     POINTER_CHAR,
     POINTER_POINTER,
+    VOID_INT,
+    VOID_CHAR,
+    VOID_POINTER,
+    VOID_VOID,
     INT_COMP=0,
     CHAR_COMP,
     POINTER_COMP,
+    VOID_COMP,
 }Types_compatibility;
 
 typedef enum type_matching{

@@ -7,43 +7,44 @@ const int TIPOS_INT_SIZE     = 32;
 const int TIPOS_CHAR_SIZE    =  8;
 const int TIPOS_VOID_SIZE    =  8;
 
-const int compatibility_table[29][6] = {
-                            /*  INT/INT  CHAR/CHAR  INT/CHAR  PNT/INT  PNT/CHAR PNT/PNT   */
-    /* PLUS_COMP         */ {      1,        1,        1,        1,       1,       0      },
-    /* MINUS_COMP        */ {      1,        1,        1,        2,       2,       0      },
-    /* MUL_COMP          */ {      1,        1,        1,        0,       0,       0      },
-    /* DIV_COMP          */ {      1,        1,        1,        0,       0,       0      },
-    /* REMAINDER_COMP    */ {      1,        1,        1,        0,       0,       0      },
-    /* BIT_AND_COMP      */ {      1,        1,        1,        0,       0,       0      },
-    /* BIT_OR_COMP       */ {      1,        1,        1,        0,       0,       0      },
-    /* BIT_XOR_COMP      */ {      1,        1,        1,        0,       0,       0      },
-    /* LOG_AND_COMP      */ {      1,        1,        1,        1,       1,       1      },
-    /* LOG_OR_COMP       */ {      1,        1,        1,        1,       1,       1      },
-    /* EUQAL_COMP        */ {      1,        1,        1,        3,       3,       3      },
-    /* DIFF_COMP         */ {      1,        1,        1,        3,       3,       3      },
-    /* LESS_COMP         */ {      1,        1,        1,        3,       3,       3      },
-    /* GREAT_COMP        */ {      1,        1,        1,        3,       3,       3      },
-    /* LEQ_COMP          */ {      1,        1,        1,        3,       3,       3      },
-    /* GEQ_COMP          */ {      1,        1,        1,        3,       3,       3      },
-    /* RSHIFT_COMP       */ {      1,        1,        1,        4,       4,       0      },
-    /* LSHIFT_COMP       */ {      1,        1,        1,        4,       4,       0      },
-    /* ASSIGN_COMP       */ {      1,        1,        1,        7,       7,       5      },
-    /* ADD_ASSIGN_COMP   */ {      1,        1,        1,        6,       6,       7      },
-    /* SUB_ASSIGN_COMP   */ {      1,        1,        1,        6,       6,       7      },
-                            /*    INT       CHAR      PNT        --       --       -      */
-    /* UN_PLUS_COMP      */ {      1,        1,        8,        0,       0,       0      },
-    /* UN_MINUS_COMP     */ {      1,        1,        9,        0,       0,       0      },
-    /* UN_DEFERENCE_COMP */ {      0,        0,        1,        0,       0,       0      },
-    /* UN_INC_COMP       */ {      1,        1,        1,        0,       0,       0      },
-    /* UN_DEC_COMP       */ {      1,        1,        1,        0,       0,       0      },
-    /* UN_BIT_NOT_COMP   */ {      1,        1,        0,        0,       0,       0      },
-    /* UN_LOG_NOT_COMP   */ {      1,        1,        1,        0,       0,       0      },
-    /* UN_ADDRESS_COMP   */ {      1,        1,        1,        0,       0,       0      },
+const int compatibility_table[29][10] = {
+                            /*  INT/INT  CHAR/CHAR  INT/CHAR  PNT/INT  PNT/CHAR PNT/PNT  VOID/INT  VOID/CHAR  VOID/POINTER  VOID/VOID  */
+    /* PLUS_COMP         */ {      1,        1,        1,        1,       1,       0,       -1,       -1,         -1,          -1      },
+    /* MINUS_COMP        */ {      1,        1,        1,        2,       2,       0,       -1,       -1,         -1,          -1      },
+    /* MUL_COMP          */ {      1,        1,        1,        0,       0,       0,       -1,       -1,         -1,          -1      },
+    /* DIV_COMP          */ {      1,        1,        1,        0,       0,       0,       -1,       -1,         -1,          -1      },
+    /* REMAINDER_COMP    */ {      1,        1,        1,        0,       0,       0,       -1,       -1,         -1,          -1      },
+    /* BIT_AND_COMP      */ {      1,        1,        1,        0,       0,       0,       -1,       -1,         -1,          -1      },
+    /* BIT_OR_COMP       */ {      1,        1,        1,        0,       0,       0,       -1,       -1,         -1,          -1      },
+    /* BIT_XOR_COMP      */ {      1,        1,        1,        0,       0,       0,       -1,       -1,         -1,          -1      },
+    /* LOG_AND_COMP      */ {      1,        1,        1,        1,       1,       1,       -1,       -1,         -1,          -1      },
+    /* LOG_OR_COMP       */ {      1,        1,        1,        1,       1,       1,       -1,       -1,         -1,          -1      },
+    /* EUQAL_COMP        */ {      1,        1,        1,        3,       3,       3,       -1,       -1,         -1,          -1      },
+    /* DIFF_COMP         */ {      1,        1,        1,        3,       3,       3,       -1,       -1,         -1,          -1      },
+    /* LESS_COMP         */ {      1,        1,        1,        3,       3,       3,       -1,       -1,         -1,          -1      },
+    /* GREAT_COMP        */ {      1,        1,        1,        3,       3,       3,       -1,       -1,         -1,          -1      },
+    /* LEQ_COMP          */ {      1,        1,        1,        3,       3,       3,       -1,       -1,         -1,          -1      },
+    /* GEQ_COMP          */ {      1,        1,        1,        3,       3,       3,       -1,       -1,         -1,          -1      },
+    /* RSHIFT_COMP       */ {      1,        1,        1,        4,       4,       0,       -1,       -1,         -1,          -1      },
+    /* LSHIFT_COMP       */ {      1,        1,        1,        4,       4,       0,       -1,       -1,         -1,          -1      },
+    /* ASSIGN_COMP       */ {      1,        1,        1,        7,       7,       5,       -1,       -1,         -1,          -1      },
+    /* ADD_ASSIGN_COMP   */ {      1,        1,        1,        6,       6,       7,       -1,       -1,         -1,          -1      },
+    /* SUB_ASSIGN_COMP   */ {      1,        1,        1,        6,       6,       7,       -1,       -1,         -1,          -1      },
+                            /*    INT       CHAR      PNT       VOID      --       --       --        --          --           --      */
+    /* UN_PLUS_COMP      */ {      1,        1,        8,        -1,      0,       0,       0,        0,          0,            0      },
+    /* UN_MINUS_COMP     */ {      1,        1,        9,        -1,      0,       0,       0,        0,          0,            0      },
+    /* UN_DEFERENCE_COMP */ {      0,        0,        1,        -1,      0,       0,       0,        0,          0,            0      },
+    /* UN_INC_COMP       */ {      1,        1,        1,        -1,      0,       0,       0,        0,          0,            0      },
+    /* UN_DEC_COMP       */ {      1,        1,        1,        -1,      0,       0,       0,        0,          0,            0      },
+    /* UN_BIT_NOT_COMP   */ {      1,        1,        0,        -1,      0,       0,       0,        0,          0,            0      },
+    /* UN_LOG_NOT_COMP   */ {      1,        1,        1,        -1,      0,       0,       0,        0,          0,            0      },
+    /* UN_ADDRESS_COMP   */ {      1,        1,        1,        -1,      0,       0,       0,        0,          0,            0      },
 };
-const int types_fusion[3][3] = {
-    { INT_INT,      INT_CHAR,    POINTER_INT     },
-    { INT_CHAR,     CHAR_CHAR,   POINTER_CHAR    },
-    { POINTER_INT, POINTER_CHAR, POINTER_POINTER },
+const int types_fusion[4][4] = {
+    { INT_INT,      INT_CHAR,    POINTER_INT,     VOID_INT     },
+    { INT_CHAR,     CHAR_CHAR,   POINTER_CHAR,    VOID_CHAR    },
+    { POINTER_INT, POINTER_CHAR, POINTER_POINTER, VOID_POINTER },
+    { VOID_INT,     VOID_CHAR,   VOID_POINTER,    VOID_VOID    },
 };
 
 Type_matching verifyTypes(Var_type var1, Var_type var2){
@@ -71,6 +72,9 @@ Error_list checkTypeMissmatch(int result_to_analyze, Var_type var1, Var_type var
     Type_matching matching = verifyTypes(var1, var2);
 
     switch(result_to_analyze){
+        case -1: //operação com void
+            error = VOID_NOT_IGNORED;
+            break;
         case 3: //pointer/(int/char/pointer) comparison
             if(matching == PTR_MISSMATCH || matching == BASE_PTR_MISSMATCH){
                 error = WRONG_TYPE_COMPARISON;
@@ -108,15 +112,19 @@ Error_list matchTypes(int operation, Var_type var1, Var_type var2){
         { var1_type = POINTER_COMP; }
     else if(var1.type == TIPOS_INT)
         { var1_type = INT_COMP; }
-    else
+    else if(var1.type == TIPOS_CHAR)
         { var1_type = CHAR_COMP; }
+    else
+        { var1_type = VOID_COMP; }
 
     if(var2.pointers)
         { var2_type = POINTER_COMP; }
     else if(var2.type == TIPOS_INT)
         { var2_type = INT_COMP; }
-    else
+    else if(var2.type == TIPOS_CHAR)
         { var2_type = CHAR_COMP; }
+    else
+        { var2_type = VOID_COMP; }
 
     if(operation >= UN_PLUS_COMP){
         result = compatibility_table[operation][var1_type];

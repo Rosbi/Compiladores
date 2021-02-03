@@ -464,11 +464,11 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
         return no_r;
     }
 
-    if(no_l.exp && no_l.exp->exp_type.type == TIPOS_VOID && no_l.exp->exp_type.pointers == 0){
+    /*if(no_l.exp && no_l.exp->exp_type.type == TIPOS_VOID && no_l.exp->exp_type.pointers == 0){
         state.error = VOID_NOT_IGNORED;
     }else if(no_r.exp && no_r.exp->exp_type.type == TIPOS_VOID && no_r.exp->exp_type.pointers == 0){
         state.error = VOID_NOT_IGNORED;
-    }else{
+    }else{*/
         switch(root.exp->node_type){
             case ASSIGN: case ADD_ASSIGN: case SUB_ASSIGN:
             case LOG_OR: case LOG_AND: case BIT_OR: case BIT_XOR: case BIT_AND:
@@ -638,6 +638,13 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
                 break;
             }
             case CONDITIONAL_EXP_THENELSE:{
+                bool exp_is_void = (no_l.exp->exp_type.type == TIPOS_VOID && no_l.exp->exp_type.pointers == 0);
+                exp_is_void     |= (no_r.exp->exp_type.type == TIPOS_VOID && no_r.exp->exp_type.pointers == 0);
+                if(exp_is_void){
+                    state.error = VOID_NOT_IGNORED;
+                    break;
+                }
+
                 int matching = verifyTypes(state.exp->left->exp_type, state.exp->right->exp_type);
                 if(matching != MATCH){
                     switch(matching){
@@ -709,6 +716,13 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
             }
 
             case CAST:{
+                bool left_is_void = ( no_l.exp->exp_type.type == TIPOS_VOID &&  no_l.exp->exp_type.pointers == 0);
+                bool exp_is_void  = (state.exp->exp_type.type == TIPOS_VOID && state.exp->exp_type.pointers == 0);
+                if(left_is_void && !exp_is_void){
+                    state.error = VOID_NOT_IGNORED;
+                    break;
+                }
+
                 if(compareTypesSize(state.exp->exp_type, state.exp->left->exp_type) == RIGHT_BIGGER){
                     state.warnings_list = warningInsert(state.warnings_list, DIFFERENT_CAST_SIZE_W, state.exp);
                 }
@@ -801,7 +815,7 @@ Exp_type_state evaluateExpressionType(Exp_type_state root){
                 break;
             }
         }
-    }
+    // }
 
     state.warnings_list = mergeWarningsLists(state.warnings_list, no_r.warnings_list);
     state.warnings_list = mergeWarningsLists(no_l.warnings_list, state.warnings_list);
@@ -942,19 +956,36 @@ void deleteTree(Expression *root){
 }
 
 int compareTypesSize(Var_type v1, Var_type v2){
+    int size_l, size_r;
     if(!v1.pointers != !v2.pointers){
         if(v1.pointers > 0){
-            return LEFT_BIGGER;
+            size_l = TIPOS_POINTER_SIZE;
         }else{
-            return RIGHT_BIGGER;
+            size_r = TIPOS_POINTER_SIZE;
         }
     }else if(v1.type != v2.type && v1.pointers == 0){
-        if(v1.type == TIPOS_INT){
-            return LEFT_BIGGER;
-        }else{
-            return RIGHT_BIGGER;
+        // if(v1.type == TIPOS_INT){
+        //     return LEFT_BIGGER;
+        // }else{
+        //     return RIGHT_BIGGER;
+        // }
+        switch(v1.type){
+            case TIPOS_INT: size_l = TIPOS_INT_SIZE;  break;
+            default:        size_l = TIPOS_CHAR_SIZE; break;
+        }
+        switch(v2.type){
+            case TIPOS_INT: size_r = TIPOS_INT_SIZE;  break;
+            default:        size_r = TIPOS_CHAR_SIZE; break;
         }
     }else{
+        size_l = size_r = TIPOS_POINTER_SIZE;
+    }
+
+    if(size_l == size_r){
         return SAME_SIZE;
+    }else if(size_l > size_r){
+        return LEFT_BIGGER;
+    }else{
+        return RIGHT_BIGGER;
     }
 }
