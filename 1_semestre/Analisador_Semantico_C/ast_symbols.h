@@ -2,9 +2,22 @@
 #define AST_SYMBOLS_H
 
 #include<stdbool.h>
-// #include<semantico.tab.h>
 #include"hashTable.h"
 #include<stdarg.h>
+
+/* 
+ * Nota sobre parâmetros:
+ *   Na AST, a expressão de parâmetros tem como raiz um COMMA_SEPARATOR
+ *   (ou uma expressão, caso só haja um parâmetro), cujo nó esquerdo é
+ *   uma expressão que representa um parâmetro, e o nó direiro é o
+ *   COMMA_SEPARATOR do parâmetro seguinte. Isso se repete até o caso
+ *   base, onde os nós direito e esquerdo são expressões de um parâmetro.
+ *                        [,]
+ *                       /    \
+ *                   [exp]    [,]
+ *                           /   \
+ *                        [exp] [exp]
+ */
 
 typedef struct symbol Symbol;
 typedef struct command_list Command_list;
@@ -20,7 +33,6 @@ enum tipos {
     DECLARACAO_FUNCAO,
 
     //tipos de comandos
-    // COM_DO_WHILE,
     COM_IF,
     COM_WHILE,
     COM_FOR,
@@ -30,11 +42,11 @@ enum tipos {
 };
 
 //tipos de variáveis, incluindo ponteiros
-struct var_type{
+typedef struct var_type{
     int type;
     int pointers;
     bool constant;
-};
+}Var_type;
 
 //representação rpn de uma expressão
 typedef struct expression{
@@ -47,7 +59,7 @@ typedef struct expression{
         char *str;
         Symbol *sym;
     } node_value;
-    struct var_type exp_type;
+    Var_type exp_type;
 
     int line;
     int column;
@@ -79,7 +91,6 @@ struct command_list{
         struct if_else_t *if_com;
         struct while_t *while_com;
         struct for_t *for_com;
-        // struct return_t *return;
         struct expression *return_com;
         struct command_list *block;
     } com;
@@ -107,7 +118,7 @@ struct function_prototype{
     bool has_definition;
     struct parameters{
         // char *id;
-        // struct var_type type;
+        // Var_type type;
         // struct variable param;
         // int line;
         // int column;
@@ -120,7 +131,7 @@ struct function_prototype{
 struct symbol{
     int symbol_type;
     char* id;
-    struct var_type type;
+    Var_type type;
     union symbol_union{
         struct variable v;
         struct function_prototype f;
@@ -134,7 +145,7 @@ struct symbol{
 struct function_definition{
     HashTable Local_Symbol_Table;
     char *name;
-    struct var_type return_type;
+    Var_type return_type;
     struct function_prototype f;
     struct command_list *commands_head;
 };
@@ -151,8 +162,8 @@ struct{
 void printSymbol(Symbol*);
 void printFunctionBody(Command_list*);
 
-Symbol* symbolNew(int symbol_type, char *id, struct var_type t, union symbol_union su, int line, int column);
-// struct parameters* parameterNew(char *id, struct var_type t, struct variable v, int line, int column, struct parameters *next);
+Symbol* symbolNew(int symbol_type, char *id, Var_type t, union symbol_union su, int line, int column);
+// struct parameters* parameterNew(char *id, Var_type t, struct variable v, int line, int column, struct parameters *next);
 Command_list* commandNew(int command_type, ...);
 
 void freeSymbol(Symbol *);

@@ -115,7 +115,7 @@ void printFunctionBody(Command_list* commands){
     printFunctionBody(commands->next);
 }
 
-Symbol* symbolNew(int symbol_type, char *id, struct var_type t, union symbol_union su, int line, int column){
+Symbol* symbolNew(int symbol_type, char *id, Var_type t, union symbol_union su, int line, int column){
     Symbol *aux = malloc(sizeof(Symbol));
     aux->symbol_type = symbol_type;
     aux->id = malloc((strlen(id) + 1) * sizeof(char));
@@ -128,7 +128,7 @@ Symbol* symbolNew(int symbol_type, char *id, struct var_type t, union symbol_uni
     return aux;
 }
 
-// struct parameters* parameterNew(char *id, struct var_type t, struct variable v, int line, int column, struct parameters *next){
+// struct parameters* parameterNew(char *id, Var_type t, struct variable v, int line, int column, struct parameters *next){
 //     struct parameters *aux = malloc(sizeof(struct parameters));
 //     aux->id = malloc((strlen(id) + 1) * sizeof(char));
 //     strcpy(aux->id, id);

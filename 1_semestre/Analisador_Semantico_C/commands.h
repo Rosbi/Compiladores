@@ -20,7 +20,7 @@ void printWarnings(struct warnings* warnings_list, FILE* lines_file);
 void freeWarningList(struct warnings *warnings_list);
 
 const char* getOperator(int operator);
-char* getType(struct var_type type);
+char* getType(Var_type type);
 
 void deleteTree(Expression*);
 

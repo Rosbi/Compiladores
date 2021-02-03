@@ -20,9 +20,11 @@ typedef enum error_list {
     /* Erros em chamadas de função */
     OBJECT_NOT_A_FUNCTION,
 	UNDECLARED_SYMBOL,
+        FUNC_STATE_ERRORS_START,
     TOO_FEW_ARGUMENTS,
     TOO_MANY_ARGUMENTS,
     INCOMPATIBLE_ARGUMENT_TYPE,
+        FUNC_STATE_ERRORS_END,
 
     /* Erros em retorno de funcao */
         //no return statement in function returning non-void
@@ -40,7 +42,7 @@ typedef enum error_list {
     LSHIFT_NEGATIVE,
     STRING_DEFINE,
     DIVISION_BY_ZERO,
-        //void value not ignored as it ought to be
+    VOID_NOT_IGNORED,
     INVALID_SUBSCRIPTOR,
     RVALUE_UNARY_OPERAND,
     INVALID_UNR_OPERAND,
@@ -53,7 +55,7 @@ typedef enum error_list {
     WRONG_ARG_UNR_PLUS,//wrong type argument to unary plus
     WRONG_ARG_UNR_MINUS,//wrong type argument to unary minus
 
-    WARNINGS_START,
+        WARNINGS_START,
     //Warnings
     LSHIFT_EXCEEDS_SIZE_W,
     RSHIFT_EXCEEDS_SIZE_W,
@@ -88,8 +90,8 @@ typedef struct func_type_state{
     Expression *func;
     char *func_name;
     int wrong_arg;
-    struct var_type expected_type;
-    struct var_type received_type;
+    Var_type expected_type;
+    Var_type received_type;
 }Func_type_state;
 
 #endif

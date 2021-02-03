@@ -46,7 +46,7 @@ const int types_fusion[3][3] = {
     { POINTER_INT, POINTER_CHAR, POINTER_POINTER },
 };
 
-Type_matching verifyTypes(struct var_type var1, struct var_type var2){
+Type_matching verifyTypes(Var_type var1, Var_type var2){
     Type_matching error = MATCH;
 
     if(var1.pointers == var2.pointers && var1.type == var2.type){ //variáveis compatíveis
@@ -66,7 +66,7 @@ Type_matching verifyTypes(struct var_type var1, struct var_type var2){
     return error;
 }
 
-Error_list checkTypeMissmatch(int result_to_analyze, struct var_type var1, struct var_type var2, int var1_type, int var2_type){
+Error_list checkTypeMissmatch(int result_to_analyze, Var_type var1, Var_type var2, int var1_type, int var2_type){
     Error_list error = NO_ERROR;
     Type_matching matching = verifyTypes(var1, var2);
 
@@ -102,7 +102,7 @@ Error_list checkTypeMissmatch(int result_to_analyze, struct var_type var1, struc
     return error;
 }
 
-Error_list matchTypes(int operation, struct var_type var1, struct var_type var2){
+Error_list matchTypes(int operation, Var_type var1, Var_type var2){
     int var1_type, var2_type, result;
     if(var1.pointers)
         { var1_type = POINTER_COMP; }

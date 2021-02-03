@@ -1,7 +1,6 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-struct var_type;
 typedef enum error_list Error_list;
 
 extern const int TIPOS_POINTER_SIZE;
@@ -58,7 +57,7 @@ typedef enum type_matching{
     PTR_AND_NON_PTR,
 }Type_matching;
 
-Type_matching verifyTypes(struct var_type left_var, struct var_type right_var);
-Error_list matchTypes(int operation, struct var_type left_var, struct var_type right_var);
+Type_matching verifyTypes(Var_type left_var, Var_type right_var);
+Error_list matchTypes(int operation, Var_type left_var, Var_type right_var);
 
 #endif

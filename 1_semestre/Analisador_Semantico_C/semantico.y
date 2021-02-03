@@ -179,7 +179,7 @@ programa1: declaracoes	{}
 
 declaracoes: 
 		   NUMBER_SIGN DEFINE IDENTIFIER expressao	{
-			   struct var_type t = { TIPOS_INT, 0 };
+			   Var_type t = { TIPOS_INT, 0 };
 			   struct variable v = { NULL, true};
 			   union symbol_union u = { .v = v };
 
@@ -206,7 +206,7 @@ declaracao_var: tipo declaracao_var1 SEMICOLON	{}
 ;
 declaracao_var1:
 	pointer IDENTIFIER array {
-			struct var_type t = { g_tipo, $1 };
+			Var_type t = { g_tipo, $1 };
 			struct variable v = { $3, false };
 			union symbol_union u = { .v = v };
 			Symbol *aux = symbolNew(DECLARACAO_VARIAVEL, $2, t, u, @2.first_line, @2.first_column);
@@ -220,6 +220,10 @@ declaracao_var1:
 					semanticError(state.error, state.exp);
 					YYABORT;
 				}
+				if($5->right->exp_type.type == TIPOS_VOID && $5->right->exp_type.pointers == 0){
+					semanticError(VOID_NOT_IGNORED, $5);
+					YYABORT;
+				}
 				if(verifyTypes(eu.sym->type, $5->right->exp_type) != MATCH){
 					semanticError(INCOMPATIBLE_INITIALIZER, $5);
 					YYABORT;
@@ -227,7 +231,7 @@ declaracao_var1:
 			}
 	}
 	| declaracao_var1 COMMA pointer IDENTIFIER array{
-			struct var_type t = { g_tipo, $3 };
+			Var_type t = { g_tipo, $3 };
 			struct variable v = { $5, false };
 			union symbol_union u = { .v = v };
 			Symbol *aux = symbolNew(DECLARACAO_VARIAVEL, $4, t, u, @4.first_line, @4.first_column);
@@ -239,6 +243,10 @@ declaracao_var1:
 				Exp_type_state state = evalExpTypeAndHandleWarnings($7->right, in_file);
 				if(state.error != NO_ERROR && state.error < WARNINGS_START){
 					semanticError(state.error, state.exp);
+					YYABORT;
+				}
+				if($7->right->exp_type.type == TIPOS_VOID && $7->right->exp_type.pointers == 0){
+					semanticError(VOID_NOT_IGNORED, $7);
 					YYABORT;
 				}
 				if(verifyTypes(eu.sym->type, $7->right->exp_type) != MATCH){
@@ -291,7 +299,7 @@ funcao: function_header LCBRACK {
 		}
 ;
 function_header: tipo pointer IDENTIFIER parametros	{
-						struct var_type t = { $1, $2 };
+						Var_type t = { $1, $2 };
 						struct function_prototype fp = { false, $4 };
 						union symbol_union u = { .f = fp };
 						Symbol *aux = symbolNew(DECLARACAO_FUNCAO, $3, t, u, @3.first_line, @3.first_column);
@@ -311,7 +319,7 @@ parametros: LPAREN parametros1 RPAREN	{ $$ = $2; }
 		  | LPAREN RPAREN				{ $$ = NULL; }
 ;
 parametros1: tipo pointer IDENTIFIER array						{
-					struct var_type t = { $1, $2 };
+					Var_type t = { $1, $2 };
 					struct variable v = { $4, false };
 					union symbol_union u = { .v = v };
 					struct parameters *param = malloc(sizeof(struct parameters));
@@ -324,7 +332,7 @@ parametros1: tipo pointer IDENTIFIER array						{
 					$$ = param;
 				}
 		   | parametros1 COMMA tipo pointer IDENTIFIER array	{
-					struct var_type t = { $3, $4 };
+					Var_type t = { $3, $4 };
 					struct variable v = { $6, false };
 					union symbol_union u = { .v = v };
 					struct parameters *aux = $1, *param = malloc(sizeof(struct parameters));
@@ -361,6 +369,9 @@ lista_comandos: DO_T bloco WHILE_T LPAREN expressao RPAREN SEMICOLON	{
 				  if(state.error != NO_ERROR && state.error < WARNINGS_START){
 					  semanticError(state.error, state.exp);
 					  YYABORT;
+				  }if($5->exp_type.type == TIPOS_VOID && $5->exp_type.pointers == 0){
+					  semanticError(VOID_NOT_IGNORED, $5);
+					  YYABORT;
 				  }
 				  $$ = commandNew(COM_WHILE, $5, $2);
 			  }
@@ -370,12 +381,19 @@ lista_comandos: DO_T bloco WHILE_T LPAREN expressao RPAREN SEMICOLON	{
 					  semanticError(state.error, state.exp);
 					  YYABORT;
 				  }
+				  if($3->exp_type.type == TIPOS_VOID && $3->exp_type.pointers == 0){
+					  semanticError(VOID_NOT_IGNORED, $3);
+					  YYABORT;
+				  }
 				  $$ = commandNew(COM_IF, $3, $5, $6);
 			  }
 			  | WHILE_T LPAREN expressao RPAREN bloco					{
 				  Exp_type_state state = evalExpTypeAndHandleWarnings($3, in_file);
 				  if(state.error != NO_ERROR && state.error < WARNINGS_START){
 					  semanticError(state.error, state.exp);
+					  YYABORT;
+				  }if($3->exp_type.type == TIPOS_VOID && $3->exp_type.pointers == 0){
+					  semanticError(VOID_NOT_IGNORED, $3);
 					  YYABORT;
 				  }
 				  $$ = commandNew(COM_WHILE, $3, $5);
@@ -553,7 +571,7 @@ exp_cast: exp_unary								{ $$ = $1; }
 		| LPAREN tipo pointer RPAREN exp_cast	{
 			union expression_union u;
 			$$ = expressionNew(CAST, u, $5, NULL, @1.first_line, @1.first_column);
-			struct var_type v = { .type=$2, .pointers=$3, .constant=true };
+			Var_type v = { .type=$2, .pointers=$3, .constant=true };
 			$$->exp_type = v;
 		}
 ;
@@ -620,7 +638,11 @@ exp_postfix: exp_prim				{ $$ = $1; }
 				   if(aux->node_value.sym->symbol_type == DECLARACAO_FUNCAO){
 					   Func_type_state f_state = matchFunctionCall(aux, NULL, in_file);
 					   if(f_state.error != NO_ERROR && f_state.error < WARNINGS_START){
-						   semanticError(f_state.error, &f_state);
+						   if(f_state.error < FUNC_STATE_ERRORS_START || f_state.error > FUNC_STATE_ERRORS_END){
+								semanticError(f_state.error, f_state.func);
+						   }else{
+								semanticError(f_state.error, &f_state);
+						}
 						   YYABORT;
 					   }
 				   }else{
@@ -650,7 +672,11 @@ exp_postfix: exp_prim				{ $$ = $1; }
 				   if(aux->node_value.sym->symbol_type == DECLARACAO_FUNCAO){
 					   Func_type_state f_state = matchFunctionCall(aux, params, in_file);
 					   if(f_state.error != NO_ERROR && f_state.error < WARNINGS_START){
-						   semanticError(f_state.error, &f_state);
+						   if(f_state.error < FUNC_STATE_ERRORS_START || f_state.error > FUNC_STATE_ERRORS_END){
+								semanticError(f_state.error, f_state.func);
+						   }else{
+								semanticError(f_state.error, &f_state);
+						}
 						   YYABORT;
 					   }
 				   }else{
@@ -674,7 +700,7 @@ exp_postfix1: exp_atr						{ $$ = $1; }
 ;
 
 exp_prim: IDENTIFIER	{
-			struct var_type t;
+			Var_type t;
 			union symbol_union u;
 			Symbol *s = symbolNew(DECLARACAO_VARIAVEL, $1, t, u, @1.first_line, @1.first_column);
 			s = identifierLookup(Current_Symbol_Table, s);
@@ -775,7 +801,7 @@ int main(int argc, char **argv){
 		printf("\n%s Local Symbols:\n", aux->function.name);
 		HshTblMap(aux->function.Local_Symbol_Table, printSymbol);
 		printFunctionBody(aux->function.commands_head);
-	} */
+	}
 	/*
 	//liberação de memória
 	HshTblMap(Program_Table.Global_Symbol_Table, freeSymbol);
@@ -943,7 +969,8 @@ void semanticError(enum error_list erro, void* element){
 		case NOT_INT_SUBSCRIPTOR:
 		case INCOMPATIBLE_INITIALIZER:
 		case WRONG_ARG_UNR_PLUS:
-		case WRONG_ARG_UNR_MINUS:{
+		case WRONG_ARG_UNR_MINUS:
+		case VOID_NOT_IGNORED:{
 			Expression *exp = element;
 			linhas = exp->line;
 			colunas = exp->column;
@@ -971,6 +998,7 @@ void semanticError(enum error_list erro, void* element){
 				case INCOMPATIBLE_INITIALIZER:    sprintf(error_msg, "incompatible types in initialization when assigning to type '%s' from type '%s'", getType(exp->left->node_value.sym->type), getType(exp->right->exp_type)); break;
 				case WRONG_ARG_UNR_PLUS:          sprintf(error_msg, "wrong type argument to unary plus"); break;
 				case WRONG_ARG_UNR_MINUS:         sprintf(error_msg, "wrong type argument to unary minus"); break;
+				case VOID_NOT_IGNORED:            sprintf(error_msg, "void value not ignored as it ought to be"); break;
 				default: break;
 			}
 			break;
