@@ -27,10 +27,10 @@ typedef enum error_list {
         FUNC_STATE_ERRORS_END,
 
     /* Erros em retorno de funcao */
-        //no return statement in function returning non-void
-        //return with a value, in function returning void
-        //return with no value, in function returning non-void
-        //incompatible types when returning type ’<nome-do-tipo>’ but ’<nome-do-tipo>’ was expected
+    NO_RETURN_IN_NONVOID_FUNC,//no return statement in function returning non-void
+    VALUE_RETURN_IN_VOID_FUNC,//return with a value, in function returning void
+    RETURN_WO_VALUE_IN_NONVOID_FUNC,//return with no value, in function returning non-void
+    INCOMPATIBLE_RETURN_TYPE,//incompatible types when returning type '%s' but '%s' was expected
 
     /* Erros na verificação de tipos em ocmandos/expressões */
     //UNDECLARED_SYMBOL
@@ -52,8 +52,8 @@ typedef enum error_list {
     STRING_ASSIGNMENT,
     INCOMPATIBLE_ASSIGNMENT,
     INVALID_BIN_OPERANDS,
-    WRONG_ARG_UNR_PLUS,//wrong type argument to unary plus
-    WRONG_ARG_UNR_MINUS,//wrong type argument to unary minus
+    WRONG_ARG_UNR_PLUS,
+    WRONG_ARG_UNR_MINUS,
 
         WARNINGS_START,
     //Warnings

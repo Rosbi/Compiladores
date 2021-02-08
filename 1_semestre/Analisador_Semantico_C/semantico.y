@@ -220,7 +220,7 @@ declaracao_var1:
 					semanticError(state.error, state.exp);
 					YYABORT;
 				}
-				if($5->right->exp_type.type == TIPOS_VOID && $5->right->exp_type.pointers == 0){
+				if(isVoid($5->right->exp_type)){
 					semanticError(VOID_NOT_IGNORED, $5);
 					YYABORT;
 				}
@@ -245,7 +245,7 @@ declaracao_var1:
 					semanticError(state.error, state.exp);
 					YYABORT;
 				}
-				if($7->right->exp_type.type == TIPOS_VOID && $7->right->exp_type.pointers == 0){
+				if(isVoid($7->right->exp_type)){
 					semanticError(VOID_NOT_IGNORED, $7);
 					YYABORT;
 				}
@@ -295,6 +295,13 @@ funcao: function_header LCBRACK {
 			while(aux->next)
 				{ aux = aux->next; }
 			aux->function.commands_head = $4;
+
+			Func_type_state returnType = matchReturnType($1, $4);
+			if(returnType.error != NO_ERROR){
+				semanticError(returnType.error, &returnType);
+				YYABORT;
+			}
+
 			Current_Symbol_Table = Program_Table.Global_Symbol_Table;
 		}
 ;
@@ -325,7 +332,7 @@ parametros1: tipo pointer IDENTIFIER array						{
 					struct parameters *param = malloc(sizeof(struct parameters));
 					param->symbol = symbolNew(DECLARACAO_VARIAVEL, $3, t, u, @3.first_line, @3.first_column);
 					param->next = NULL;
-					if(t.type == TIPOS_VOID && t.pointers == 0){
+					if(isVoid(t)){
 						semanticError(PARAMETER_DECLARED_VOID, param->symbol);
 						YYABORT;
 					}
@@ -338,7 +345,7 @@ parametros1: tipo pointer IDENTIFIER array						{
 					struct parameters *aux = $1, *param = malloc(sizeof(struct parameters));
 					param->symbol = symbolNew(DECLARACAO_VARIAVEL, $5, t, u, @5.first_line, @5.first_column);
 					param->next = NULL;
-					if(t.type == TIPOS_VOID && t.pointers == 0){
+					if(isVoid(t)){
 						semanticError(PARAMETER_DECLARED_VOID, param->symbol);
 						YYABORT;
 					}
@@ -369,7 +376,7 @@ lista_comandos: DO_T bloco WHILE_T LPAREN expressao RPAREN SEMICOLON	{
 				  if(state.error != NO_ERROR && state.error < WARNINGS_START){
 					  semanticError(state.error, state.exp);
 					  YYABORT;
-				  }if($5->exp_type.type == TIPOS_VOID && $5->exp_type.pointers == 0){
+				  }if(isVoid($5->exp_type)){
 					  semanticError(VOID_NOT_IGNORED, $5);
 					  YYABORT;
 				  }
@@ -381,7 +388,7 @@ lista_comandos: DO_T bloco WHILE_T LPAREN expressao RPAREN SEMICOLON	{
 					  semanticError(state.error, state.exp);
 					  YYABORT;
 				  }
-				  if($3->exp_type.type == TIPOS_VOID && $3->exp_type.pointers == 0){
+				  if(isVoid($3->exp_type)){
 					  semanticError(VOID_NOT_IGNORED, $3);
 					  YYABORT;
 				  }
@@ -392,7 +399,7 @@ lista_comandos: DO_T bloco WHILE_T LPAREN expressao RPAREN SEMICOLON	{
 				  if(state.error != NO_ERROR && state.error < WARNINGS_START){
 					  semanticError(state.error, state.exp);
 					  YYABORT;
-				  }if($3->exp_type.type == TIPOS_VOID && $3->exp_type.pointers == 0){
+				  }if(isVoid($3->exp_type)){
 					  semanticError(VOID_NOT_IGNORED, $3);
 					  YYABORT;
 				  }
@@ -413,7 +420,14 @@ lista_comandos: DO_T bloco WHILE_T LPAREN expressao RPAREN SEMICOLON	{
 			  | SCANF_T LPAREN STRING COMMA AMPERSAND IDENTIFIER RPAREN SEMICOLON		{}
 			  | EXIT_T LPAREN expressao RPAREN SEMICOLON				{}
 			  | RETURN_T opt_exp SEMICOLON								{
+				  Exp_type_state state = evalExpTypeAndHandleWarnings($2, in_file);
+				  if(state.error != NO_ERROR && state.error < WARNINGS_START){
+					  semanticError(state.error, state.exp);
+					  YYABORT;
+				  }
 				  $$ = commandNew(COM_RETURN, $2);
+				  $$->line = @1.first_line;
+				  $$->column = @1.first_column;
 			  }
 			  | expressao SEMICOLON										{
 				  Exp_type_state state = evalExpTypeAndHandleWarnings($1, in_file);
@@ -895,7 +909,7 @@ int varInsertAndCheck(HashTable symbol_table, Symbol* s){
 		a = a->next;
 	}
 
-	if(s->type.type == TIPOS_VOID && s->type.pointers == 0){
+	if(isVoid(s->type)){
 		semanticError(VARIABLE_DECLARED_VOID, s);
 		return 0;
 	}
@@ -1005,14 +1019,22 @@ void semanticError(enum error_list erro, void* element){
 		}
 		case INCOMPATIBLE_ARGUMENT_TYPE:
 		case TOO_FEW_ARGUMENTS:
-		case TOO_MANY_ARGUMENTS:{
+		case TOO_MANY_ARGUMENTS:
+		case NO_RETURN_IN_NONVOID_FUNC:
+		case VALUE_RETURN_IN_VOID_FUNC:
+		case RETURN_WO_VALUE_IN_NONVOID_FUNC:
+		case INCOMPATIBLE_RETURN_TYPE:{
 			Func_type_state *state = element;
 			linhas = state->func->line;
 			colunas = state->func->column;
 			switch(erro){
-				case INCOMPATIBLE_ARGUMENT_TYPE: sprintf(error_msg, "incompatible type for argument '%d' of '%s' expected '%s' but argument is of type '%s'", state->wrong_arg, state->func_name, getType(state->expected_type), getType(state->received_type)); break;
-				case TOO_FEW_ARGUMENTS:          sprintf(error_msg, "too few arguments to function '%s'", state->func_name); break;
-				case TOO_MANY_ARGUMENTS:         sprintf(error_msg, "too many arguments to function '%s'",  state->func_name); break;
+				case INCOMPATIBLE_ARGUMENT_TYPE:      sprintf(error_msg, "incompatible type for argument '%d' of '%s' expected '%s' but argument is of type '%s'", state->wrong_arg, state->func_name, getType(state->expected_type), getType(state->received_type)); break;
+				case TOO_FEW_ARGUMENTS:               sprintf(error_msg, "too few arguments to function '%s'", state->func_name); break;
+				case TOO_MANY_ARGUMENTS:              sprintf(error_msg, "too many arguments to function '%s'",  state->func_name); break;
+				case NO_RETURN_IN_NONVOID_FUNC:       sprintf(error_msg, "no return statement in function returning non-void"); break;
+				case VALUE_RETURN_IN_VOID_FUNC:       sprintf(error_msg, "return with a value, in function returning void"); break;
+				case RETURN_WO_VALUE_IN_NONVOID_FUNC: sprintf(error_msg, "return with no value, in function returning non-void"); break;
+				case INCOMPATIBLE_RETURN_TYPE:        sprintf(error_msg, "incompatible types when returning type '%s' but '%s' was expected", getType(state->received_type), getType(state->expected_type)); break;
 				default: break;
 			}
 			break;

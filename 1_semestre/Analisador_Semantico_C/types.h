@@ -2,6 +2,8 @@
 #define TYPES_H
 
 typedef enum error_list Error_list;
+typedef struct exp_type_state Exp_type_state;
+typedef struct func_type_state Func_type_state;
 
 extern const int TIPOS_POINTER_SIZE;
 extern const int TIPOS_INT_SIZE;
@@ -62,7 +64,10 @@ typedef enum type_matching{
     PTR_AND_NON_PTR,
 }Type_matching;
 
+bool isVoid(Var_type type);
+
 Type_matching verifyTypes(Var_type left_var, Var_type right_var);
 Error_list matchTypes(int operation, Var_type left_var, Var_type right_var);
+Func_type_state matchReturnType(Symbol *func, Command_list *commands);
 
 #endif

@@ -1,3 +1,5 @@
+#include<stddef.h>
+#include<stdlib.h>
 #include"ast_symbols.h"
 #include"types.h"
 #include"errors.h"
@@ -7,7 +9,8 @@ const int TIPOS_INT_SIZE     = 32;
 const int TIPOS_CHAR_SIZE    =  8;
 const int TIPOS_VOID_SIZE    =  8;
 
-const int compatibility_table[29][10] = {
+const int compatibility_table[29][10] =
+{
                             /*  INT/INT  CHAR/CHAR  INT/CHAR  PNT/INT  PNT/CHAR PNT/PNT  VOID/INT  VOID/CHAR  VOID/POINTER  VOID/VOID  */
     /* PLUS_COMP         */ {      1,        1,        1,        1,       1,       0,       -1,       -1,         -1,          -1      },
     /* MINUS_COMP        */ {      1,        1,        1,        2,       2,       0,       -1,       -1,         -1,          -1      },
@@ -40,7 +43,8 @@ const int compatibility_table[29][10] = {
     /* UN_LOG_NOT_COMP   */ {      1,        1,        1,        -1,      0,       0,       0,        0,          0,            0      },
     /* UN_ADDRESS_COMP   */ {      1,        1,        1,        -1,      0,       0,       0,        0,          0,            0      },
 };
-const int types_fusion[4][4] = {
+const int types_fusion[4][4] =
+{
     { INT_INT,      INT_CHAR,    POINTER_INT,     VOID_INT     },
     { INT_CHAR,     CHAR_CHAR,   POINTER_CHAR,    VOID_CHAR    },
     { POINTER_INT, POINTER_CHAR, POINTER_POINTER, VOID_POINTER },
@@ -140,5 +144,58 @@ Error_list matchTypes(int operation, Var_type var1, Var_type var2){
             }
         case  1: return NO_ERROR;
         default: return checkTypeMissmatch(result, var1, var2, var1_type, var2_type);
+    }
+}
+
+Func_type_state matchReturnType(Symbol *func, Command_list *commands){
+    Command_list *aux = commands;
+    Func_type_state state = { .error=NO_ERROR };
+    bool is_void_func_type = isVoid(func->type);
+    bool has_return = false;
+
+    for(;aux;aux=aux->next){
+        if(aux->com_type == COM_RETURN){
+            state.func = malloc(sizeof(Expression));
+            if(!aux->com.return_com && !is_void_func_type){
+                state.error = RETURN_WO_VALUE_IN_NONVOID_FUNC;
+                state.func->line = aux->line;
+                state.func->column = aux->column;
+                return state;
+            }else if(aux->com.return_com && is_void_func_type){
+                state.error = VALUE_RETURN_IN_VOID_FUNC;
+                state.func->line = func->line;
+                state.func->column = func->column;
+                return state;
+            }else if(aux->com.return_com && !is_void_func_type){
+                if(verifyTypes(func->type, aux->com.return_com->exp_type) != MATCH){
+                    state.error = INCOMPATIBLE_RETURN_TYPE;
+                    state.func->line = aux->line;
+                    state.func->column = aux->column;
+                    state.expected_type = func->type;
+                    state.received_type = aux->com.return_com->exp_type;
+                    return state;
+                }
+            }
+
+            has_return = true;
+        }
+    }
+
+    if(!is_void_func_type && !has_return){
+        state.error = NO_RETURN_IN_NONVOID_FUNC; 
+        state.func = malloc(sizeof(Expression));
+        state.func->line = func->line;
+        state.func->column = func->column;
+        return state;
+    }
+
+    return state;
+}
+
+bool isVoid(Var_type type){
+    if(type.type == TIPOS_VOID && type.pointers == 0){
+        return true;
+    }else{
+        return false;
     }
 }

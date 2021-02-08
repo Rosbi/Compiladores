@@ -95,6 +95,9 @@ struct command_list{
         struct command_list *block;
     } com;
     struct command_list *next;
+
+    int line;
+    int column;
 };
 
 //possíveis informações de uma variável
