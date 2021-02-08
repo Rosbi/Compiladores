@@ -453,7 +453,14 @@ opt_exp: expressao		{ $$ = $1; }
 ;
 
 expressao: exp_atr					{ $$ = $1; }
-		 | expressao COMMA exp_atr	{ $$ = $3; }
+		 | expressao COMMA exp_atr	{ 
+			 Exp_type_state state = evalExpTypeAndHandleWarnings($1, in_file);
+			 if(state.error != NO_ERROR){
+				 semanticError(state.error, state.exp);
+				 YYABORT;
+			 }
+			 $$ = $3; 
+		 }
 ;
 
 exp_atr: exp_cond						{ $$ = $1; }
@@ -757,7 +764,7 @@ array: LBRACK expressao RBRACK array	{
 				semanticError(state.error, state.exp);
 				YYABORT;
 			}
-			
+
 			aux->exp = $2;
 			aux->length = state.value;
 			aux->next = $4;
