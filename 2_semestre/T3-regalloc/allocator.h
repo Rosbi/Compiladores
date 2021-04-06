@@ -1,9 +1,10 @@
 #ifndef REGISTER_ALLOCATOR_H
 #define REGISTER_ALLOCATOR_H
 
-typedef struct graph Graph;
-typedef struct stack Stack;
+#include"graph.h"
+#include"stack.h"
 
-void simplify(Graph, Stack);
+void simplify(Graph*, Stack*);
+void select_assign(Graph*, Stack*);
 
 #endif

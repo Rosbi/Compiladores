@@ -61,25 +61,37 @@ Adjacency pop(Stack *stck, int *reg){
     return adj;
 }
 
-// int main(){
-//     Stack s = create_stack();
-//     int* a = malloc(sizeof(int)*3);
-//     int* b = malloc(sizeof(int)*3);
-//     int* c = malloc(sizeof(int)*3);
-//     for(int i=0;i<3;i++){ a[i]=i+0; }
-//     for(int i=0;i<3;i++){ b[i]=i+3; }
-//     for(int i=0;i<3;i++){ c[i]=i+6; }
-//     s = push(s, b);
-//     s = push(s, a);
-//     s = push(s, c);
+void print_stack(Stack stck){
+    StackElement *aux = stck.first;
 
-//     a = pop(&s);
-//     for(int i=0;i<3;i++){ printf("%d ", a[i]); }
-//     printf("\n");
-//     a = pop(&s);
-//     for(int i=0;i<3;i++){ printf("%d ", a[i]); }
-//     printf("\n");
-//     a = pop(&s);
-//     for(int i=0;i<3;i++){ printf("%d ", a[i]); }
-//     printf("\n");
-// }
+    while(aux){
+        printf("%d -> ", aux->reg);
+        aux=aux->next;
+    }
+    printf("\n");
+}
+
+/* REMOVE
+int main(){
+    Stack s = create_stack();
+    int* a = malloc(sizeof(int)*3);
+    int* b = malloc(sizeof(int)*3);
+    int* c = malloc(sizeof(int)*3);
+    for(int i=0;i<3;i++){ a[i]=i+0; }
+    for(int i=0;i<3;i++){ b[i]=i+3; }
+    for(int i=0;i<3;i++){ c[i]=i+6; }
+    s = push(s, b);
+    s = push(s, a);
+    s = push(s, c);
+
+    a = pop(&s);
+    for(int i=0;i<3;i++){ printf("%d ", a[i]); }
+    printf("\n");
+    a = pop(&s);
+    for(int i=0;i<3;i++){ printf("%d ", a[i]); }
+    printf("\n");
+    a = pop(&s);
+    for(int i=0;i<3;i++){ printf("%d ", a[i]); }
+    printf("\n");
+}
+*/

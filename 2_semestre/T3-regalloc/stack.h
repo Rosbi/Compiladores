@@ -18,4 +18,6 @@ Stack create_stack();
 Stack push(Stack stck, Adjacency adj, int reg);
 Adjacency pop(Stack *stck, int *reg);
 
+void print_stack(Stack stck);
+
 #endif
