@@ -28,6 +28,8 @@ Info getPrimeiroRegistro(HashTable, char* key);
 //Nota: O vetor é alocado na memória, portanto é necessário dar free() no ponteiro retornado.
 Info* getVetorRegistros(HashTable, char* key, int* tamanhoDoVetor);
 
+char** getAllKeys(HashTable table);
+
 //Exclui a chave 'key' da tabela, e retorna a posição excluída (-1 caso não encontre);
 //Pré-requisito: tabela existe e chave não nula;
 //Pós condição: chave excluída da tabela.
@@ -48,5 +50,5 @@ void HshTblMap(HashTable, void (*func)(Info, va_list), ...);
 //Pós condição: tabela não existe mais.
 void* hashtableFinalizar(HashTable);
 
-void printTable(HashTable tabela);
+void printTableKeys(HashTable tabela);
 #endif

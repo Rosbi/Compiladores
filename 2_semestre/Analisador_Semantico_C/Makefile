@@ -13,6 +13,11 @@ $(PROGRAMA): $(LEXICO) $(SEMANTICO)
 	$(CC) -c *.c -I. $(FLAGS)
 	$(CC) *.o -o $(PROGRAMA) $(FLAGS)
 
+lib:
+	ar rcs libmsa.a ast_symbols.o commands.o hashTable.o lex.yy.o semantico.tab.o types.o
+	cp ./*.h ./lib_msa
+	cp ./libmsa.a ./lib_msa
+
 clean:
 	rm -f *.yy.c
 	rm -f *.tab.c

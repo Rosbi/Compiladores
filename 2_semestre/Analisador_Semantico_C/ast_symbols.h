@@ -39,6 +39,10 @@ enum tipos {
     COM_RETURN,
     COM_EXP,
     COM_BLOCK,
+
+    COM_PRINTF,
+    COM_SCANF,
+    COM_EXIT,
 };
 
 //tipos de variáveis, incluindo ponteiros
@@ -53,7 +57,7 @@ typedef struct expression{
     struct expression *left;
     struct expression *right;
     int node_type;
-    union expression_union{
+    union  expression_union{
         int num;
         char *chr;
         char *str;
@@ -79,6 +83,14 @@ struct for_t{
     struct expression *exp_update;
     struct command_list *commands;
 };
+struct printf_t {
+    char* string;
+    struct expression *exp;
+};
+struct scanf_t {
+    char* string;
+    char* var;
+};
 // struct return_t{
 //     struct expression *exp_return;
 // }
@@ -93,6 +105,9 @@ struct command_list{
         struct for_t *for_com;
         struct expression *return_com;
         struct command_list *block;
+        struct printf_t *printf_com;
+        struct scanf_t *scanf_com;
+        struct expression *exit_com;
     } com;
     struct command_list *next;
 
@@ -144,7 +159,7 @@ struct symbol{
     int column;
 };
 
-//definição da função, com sua próŕia tabela de símbolos
+//definição da função, com a sua propria tabela de símbolos
 struct function_definition{
     HashTable Local_Symbol_Table;
     char *name;
@@ -154,7 +169,7 @@ struct function_definition{
 };
 
 //struct principal do programa
-struct{
+extern struct _program_table {
     HashTable Global_Symbol_Table;
     struct function_list{
         struct function_definition function;

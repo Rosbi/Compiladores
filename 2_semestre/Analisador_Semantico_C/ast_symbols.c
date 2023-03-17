@@ -5,6 +5,8 @@
 
 #include"commands.h" //tirar
 
+struct _program_table Program_Table;
+
 void printSymbol(Symbol *s){
     switch(s->symbol_type){
         case DECLARACAO_VARIAVEL:
@@ -107,6 +109,19 @@ void printFunctionBody(Command_list* commands){
             printFunctionBody(commands->com.block);
             printf("}\n");
             break;
+        case COM_PRINTF:
+            printf("printf(\"%s\", ", commands->com.printf_com->string);
+            RpnWalk(commands->com.printf_com->exp);
+            printf(")\n");
+            break;
+        case COM_SCANF:
+            printf("scanf(\"%s\", &%s)\n", commands->com.scanf_com->string, commands->com.scanf_com->var);
+            break;
+        case COM_EXIT:
+            printf("exit(");
+            RpnWalk(commands->com.exit_com);
+            printf(")\n");
+            break;
         default:
             printf(" ++ shouldn't have come here ++ \n");
             return;
@@ -188,6 +203,27 @@ Command_list* commandNew(int command_type, ...){
         case COM_BLOCK:
         {
             com->com.block = va_arg(args, struct command_list*);
+            break;
+        }
+        case COM_PRINTF:
+        {
+            com->com.printf_com = malloc(sizeof(struct printf_t));
+
+            com->com.printf_com->string = va_arg(args, char*);
+            com->com.printf_com->exp    = va_arg(args, struct expression*);
+            break;
+        }
+        case COM_SCANF:
+        {
+            com->com.scanf_com = malloc(sizeof(struct scanf_t));
+
+            com->com.scanf_com->string = va_arg(args, char*);
+            com->com.scanf_com->var    = va_arg(args, char*);
+            break;
+        }
+        case COM_EXIT:
+        {
+            com->com.exit_com = va_arg(args, struct expression*);
             break;
         }
     }

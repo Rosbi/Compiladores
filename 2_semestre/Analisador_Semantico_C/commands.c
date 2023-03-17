@@ -142,7 +142,7 @@ void RpnWalk(Expression *root){
             printf("1 - ");
             break;
         case SUBSCRIPT:     printf("[] "); break;
-        case FUNCTION_CALL: printf("() "); break;
+        case FUNCTION_CALL: printf("%s() ", root->node_value.sym->id); break;
 
         case COMMA_SEPARATOR:
             printf(", ");

@@ -1,4 +1,10 @@
-%{
+%code provides{
+#include<stdio.h>
+extern FILE* in_file;
+void setup(FILE* set_in_file);
+}
+
+%code{
 
 #include<stdio.h>
 #include<string.h>
@@ -26,7 +32,7 @@ int g_tipo = 0;
 FILE* in_file = NULL;
 HashTable Current_Symbol_Table = NULL;
 
-%}
+}
 
 /* declare types */
 %union{
@@ -50,7 +56,6 @@ HashTable Current_Symbol_Table = NULL;
 %type <integer> NUM_HEXA
 %type <integer> NUM_OCTA
 %type <string> CHARACTER
-%type <symbol_union> declaracao_var1
 %type <symbol_union> function_header
 %type <array_union> array
 %type <expression_union> opt_assign
@@ -81,6 +86,10 @@ HashTable Current_Symbol_Table = NULL;
 %type <commands_union> bloco
 %type <commands_union> function_body
 %type <func_def_union> funcao
+%type <expression_union> declaracao_var1
+%type <expression_union> declaracao_var
+%type <commands_union> func_dec_var
+%type <expression_union> printf_exp
 
 /* declare tokens */
 %token VOID_T
@@ -202,10 +211,10 @@ declaracoes:
 		   | declaracao_prot	{}
 ;
 
-declaracao_var: tipo declaracao_var1 SEMICOLON	{}
+declaracao_var: tipo declaracao_var1 SEMICOLON	{ $$ = $2; }
 ;
 declaracao_var1:
-	pointer IDENTIFIER array {
+	pointer IDENTIFIER array <expression_union>{
 			Var_type t = { g_tipo, $1 };
 			struct variable v = { $3, false };
 			union symbol_union u = { .v = v };
@@ -228,16 +237,18 @@ declaracao_var1:
 					semanticError(INCOMPATIBLE_INITIALIZER, $5);
 					YYABORT;
 				}
-			}
+				$$ = $5;
+			} else { $$ = NULL; }
 	}
-	| declaracao_var1 COMMA pointer IDENTIFIER array{
+	| declaracao_var1 COMMA pointer IDENTIFIER array <expression_union>{
 			Var_type t = { g_tipo, $3 };
 			struct variable v = { $5, false };
 			union symbol_union u = { .v = v };
 			Symbol *aux = symbolNew(DECLARACAO_VARIAVEL, $4, t, u, @4.first_line, @4.first_column);
 			if(!varInsertAndCheck(Current_Symbol_Table, aux)){ YYABORT; }
+			$$ = NULL;
 		}					opt_assign							{
-		if($7){
+			if($7){
 				union expression_union eu = { .sym=getPrimeiroRegistro(Current_Symbol_Table, $4) };
 				$7->left = expressionNew(IDENTIFIER, eu, NULL, NULL, @4.first_line, @4.first_column);
 				Exp_type_state state = evalExpTypeAndHandleWarnings($7->right, in_file);
@@ -253,7 +264,8 @@ declaracao_var1:
 					semanticError(INCOMPATIBLE_INITIALIZER, $7);
 					YYABORT;
 				}
-			}
+				$$ = $7;
+			} else { $$ = NULL; }
 	}
 ;
 opt_assign: ASSIGN exp_atr	{
@@ -315,11 +327,32 @@ function_header: tipo pointer IDENTIFIER parametros	{
 					}
 ;
 function_body: func_dec_var comandos RCBRACK {
-					$$ = $2;
+					Command_list *aux = $1;
+					if(aux) {
+						for(; aux->next; aux=aux->next);
+						aux->next = $2;
+						$$ = $1;
+					} else {
+						$$ = $2;
+					}
 				}
 ;
-func_dec_var: func_dec_var declaracao_var	{}
-			| /* epsilon */					{}
+func_dec_var: func_dec_var declaracao_var	{ 
+				Command_list *aux=$1;
+				if(!aux){
+					if($2) {
+						$$ = commandNew(COM_EXP, $2);
+					} else {
+						$$ = NULL;
+					} 
+				}
+				else {
+					for(; aux->next; aux=aux->next);
+					aux->next = commandNew(COM_EXP, $2);
+					$$ = $1;
+				}
+			}
+			| /* epsilon */					{ $$ = NULL; }
 ;
 
 parametros: LPAREN parametros1 RPAREN	{ $$ = $2; }
@@ -416,9 +449,9 @@ lista_comandos: DO_T bloco WHILE_T LPAREN expressao RPAREN SEMICOLON	{
 				  }
 				  $$ = commandNew(COM_FOR, $3, $5, $7, $9);
 			  }
-			  | PRINTF_T LPAREN STRING printf_exp RPAREN SEMICOLON		{}
-			  | SCANF_T LPAREN STRING COMMA AMPERSAND IDENTIFIER RPAREN SEMICOLON		{}
-			  | EXIT_T LPAREN expressao RPAREN SEMICOLON				{}
+			  | PRINTF_T LPAREN STRING printf_exp RPAREN SEMICOLON		{ $$ = commandNew(COM_PRINTF, $3, $4); }
+			  | SCANF_T LPAREN STRING COMMA AMPERSAND IDENTIFIER RPAREN SEMICOLON		{ $$ = commandNew(COM_SCANF, $3, $6); }
+			  | EXIT_T LPAREN expressao RPAREN SEMICOLON				{ $$ = commandNew(COM_EXIT, $3); } 
 			  | RETURN_T opt_exp SEMICOLON								{
 				  Exp_type_state state = evalExpTypeAndHandleWarnings($2, in_file);
 				  if(state.error != NO_ERROR && state.error < WARNINGS_START){
@@ -442,8 +475,8 @@ lista_comandos: DO_T bloco WHILE_T LPAREN expressao RPAREN SEMICOLON	{
 				  $$ = commandNew(COM_BLOCK, $1);
 			  }
 ;
-printf_exp: COMMA expressao	{}
-		  | /* epsilon */	{}
+printf_exp: COMMA expressao	{ $$ = $2; }
+		  | /* epsilon */	{ $$ = NULL; }
 ;
 else_exp: ELSE_T bloco		{ $$ = $2; }
 		| /* epsilon */		{ $$ = NULL; }
@@ -674,7 +707,7 @@ exp_postfix: exp_prim				{ $$ = $1; }
 				   semanticError(OBJECT_NOT_A_FUNCTION, aux);
 				   YYABORT;
 			   }
-			   union expression_union u;
+			   union expression_union u = {.sym = aux->node_value.sym};
 			   $$ = expressionNew(FUNCTION_CALL, u, NULL, NULL, aux->line, aux->column);
 			   $$->exp_type = aux->exp_type;
 		   }
@@ -708,7 +741,7 @@ exp_postfix: exp_prim				{ $$ = $1; }
 				   semanticError(OBJECT_NOT_A_FUNCTION, aux);
 				   YYABORT;
 			   }
-			   union expression_union u;
+			   union expression_union u = {.sym = aux->node_value.sym};
 			   $$ = expressionNew(FUNCTION_CALL, u, NULL, NULL, aux->line, aux->column);
 			   $$->exp_type = aux->exp_type;
 		   }
@@ -808,12 +841,19 @@ void yyerror(char *s){
 	}
 }
 
-int main(int argc, char **argv){
+
+void setup(FILE* set_in_file){
 	Program_Table.Global_Symbol_Table = criaTabela(211);
 	Current_Symbol_Table = Program_Table.Global_Symbol_Table;
+	in_file = set_in_file;
+}
 
-	in_file = stdin;
-	yyparse();
+//int main(int argc, char **argv){
+//	Program_Table.Global_Symbol_Table = criaTabela(211);
+//	Current_Symbol_Table = Program_Table.Global_Symbol_Table;
+
+//	in_file = stdin;
+//	yyparse();
 
 	// printa as tabelas
 	/* printf("\nGlobal Symbols:\n");
@@ -832,8 +872,8 @@ int main(int argc, char **argv){
 
 	hashtableFinalizar(Program_Table.Global_Symbol_Table);
 	*/
-    return 0;
-}
+//    return 0;
+//}
 
 int matchPrototypes(Symbol pro1, Symbol pro2){
 	struct parameters *param1 = pro1.var.f.parameters;

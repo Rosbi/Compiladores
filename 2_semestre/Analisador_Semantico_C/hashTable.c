@@ -139,6 +139,25 @@ Info* getVetorRegistros(HashTable tabela, char* key, int *tamanhoVetor){
     return infoArray;
 }
 
+char** getAllKeys(HashTable table){
+    struct tabela *tabela = table;
+    char* c;
+    char** keys = malloc(sizeof(c) * tabela->tamanho);
+
+    int quantidadeChaves = 0;
+    struct registrado *aux;
+    for(int i=0; i < tabela->tamanho; i++) {
+        aux = tabela->reg[i].reg;
+        while(aux) {
+            keys[quantidadeChaves] = aux->key;
+            quantidadeChaves++;
+            aux = aux->next;
+        }
+    }
+    keys[quantidadeChaves] = NULL;
+    return keys;
+}
+
 int removeChave(HashTable tabela, char* key){
     if(!existeChave(tabela, key)){
         return -1;
